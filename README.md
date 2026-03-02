@@ -14,13 +14,6 @@ Spawn fabric runtime repository.
 - `codex.session.service.*`
 - `codex.config.*`
 
-- codex helpers owned by spawn:
-  - `bin/codex-event-source`
-  - `bin/codex-config-validate`
-  - `bin/codex-resume-diagnose`
-  - `bin/codex-alert-log`
-  - `bin/codex-session-events`
-
 ## Run
 ```bash
 cd ~/src/spawn
