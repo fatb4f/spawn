@@ -1,0 +1,63 @@
+{
+  "$defs": {
+    "ActionPolicyV1": {
+      "properties": {
+        "execution_class": {
+          "default": "transient",
+          "title": "Execution Class",
+          "type": "string"
+        },
+        "retry": {
+          "default": "none",
+          "title": "Retry",
+          "type": "string"
+        },
+        "timeout_sec": {
+          "default": 30,
+          "title": "Timeout Sec",
+          "type": "integer"
+        }
+      },
+      "title": "ActionPolicyV1",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "action": {
+      "title": "Action",
+      "type": "string"
+    },
+    "args": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Args",
+      "type": "array"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "policy": {
+      "$ref": "#/$defs/ActionPolicyV1"
+    },
+    "request_id": {
+      "title": "Request Id",
+      "type": "string"
+    },
+    "schema": {
+      "const": "action_request_v1",
+      "default": "action_request_v1",
+      "title": "Schema",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "event_id",
+    "action",
+    "policy"
+  ],
+  "title": "ActionRequestV1",
+  "type": "object"
+}

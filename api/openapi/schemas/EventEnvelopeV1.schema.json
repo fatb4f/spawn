@@ -1,0 +1,56 @@
+{
+  "properties": {
+    "dedupe_key": {
+      "title": "Dedupe Key",
+      "type": "string"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "event_type": {
+      "enum": [
+        "codex.session.started",
+        "codex.session.updated",
+        "codex.session.ended",
+        "codex.session.stalled",
+        "codex.config.changed",
+        "codex.session.meta.refresh.failed",
+        "codex.session.meta.prompt.changed",
+        "codex.session.resume.failed",
+        "codex.session.service.restarted",
+        "spawn.alert.raised"
+      ],
+      "title": "Event Type",
+      "type": "string"
+    },
+    "observed_at": {
+      "title": "Observed At",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "schema": {
+      "const": "event_envelope_v1",
+      "default": "event_envelope_v1",
+      "title": "Schema",
+      "type": "string"
+    },
+    "source": {
+      "title": "Source",
+      "type": "string"
+    }
+  },
+  "required": [
+    "event_id",
+    "event_type",
+    "source",
+    "observed_at",
+    "dedupe_key"
+  ],
+  "title": "EventEnvelopeV1",
+  "type": "object"
+}

@@ -1,0 +1,71 @@
+{
+  "$defs": {
+    "ActionArtifactsV1": {
+      "properties": {
+        "stderr": {
+          "default": "",
+          "title": "Stderr",
+          "type": "string"
+        },
+        "stdout": {
+          "default": "",
+          "title": "Stdout",
+          "type": "string"
+        }
+      },
+      "title": "ActionArtifactsV1",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "action": {
+      "title": "Action",
+      "type": "string"
+    },
+    "artifacts": {
+      "$ref": "#/$defs/ActionArtifactsV1"
+    },
+    "event_id": {
+      "title": "Event Id",
+      "type": "string"
+    },
+    "finished_at": {
+      "title": "Finished At",
+      "type": "string"
+    },
+    "request_id": {
+      "title": "Request Id",
+      "type": "string"
+    },
+    "return_code": {
+      "title": "Return Code",
+      "type": "integer"
+    },
+    "schema": {
+      "const": "action_result_v1",
+      "default": "action_result_v1",
+      "title": "Schema",
+      "type": "string"
+    },
+    "started_at": {
+      "title": "Started At",
+      "type": "string"
+    },
+    "status": {
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "request_id",
+    "event_id",
+    "action",
+    "status",
+    "return_code",
+    "started_at",
+    "finished_at",
+    "artifacts"
+  ],
+  "title": "ActionResultV1",
+  "type": "object"
+}

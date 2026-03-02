@@ -7,6 +7,8 @@ import time
 import uuid
 from typing import Any
 
+from spawn.schema_models import ActionRequestV1, ActionResultV1, EventEnvelopeV1
+
 
 def utc_now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
@@ -20,7 +22,7 @@ def make_event_envelope(
     dedupe_key: str,
     event_id: str | None = None,
 ) -> dict[str, Any]:
-    return {
+    row = {
         "schema": "event_envelope_v1",
         "event_id": event_id or str(uuid.uuid4()),
         "event_type": event_type,
@@ -29,6 +31,7 @@ def make_event_envelope(
         "dedupe_key": dedupe_key,
         "payload": payload,
     }
+    return EventEnvelopeV1.model_validate(row).model_dump(by_alias=True)
 
 
 def make_action_request(
@@ -41,7 +44,7 @@ def make_action_request(
     execution_class: str = "transient",
     request_id: str | None = None,
 ) -> dict[str, Any]:
-    return {
+    row = {
         "schema": "action_request_v1",
         "request_id": request_id or str(uuid.uuid4()),
         "event_id": event_id,
@@ -53,6 +56,7 @@ def make_action_request(
         },
         "args": list(args or []),
     }
+    return ActionRequestV1.model_validate(row).model_dump(by_alias=True)
 
 
 def make_action_result(
@@ -67,7 +71,7 @@ def make_action_result(
     stderr: str,
     action: str,
 ) -> dict[str, Any]:
-    return {
+    row = {
         "schema": "action_result_v1",
         "request_id": request_id,
         "event_id": event_id,
@@ -78,15 +82,9 @@ def make_action_result(
         "finished_at": finished_at,
         "artifacts": {"stdout": stdout, "stderr": stderr},
     }
+    return ActionResultV1.model_validate(row).model_dump(by_alias=True)
 
 
 def parse_event_envelope(raw: str) -> dict[str, Any]:
     event = json.loads(raw)
-    if not isinstance(event, dict):
-        raise ValueError("event must be an object")
-    if event.get("schema") != "event_envelope_v1":
-        raise ValueError("unsupported schema")
-    for key in ("event_id", "event_type", "source", "observed_at", "dedupe_key", "payload"):
-        if key not in event:
-            raise ValueError(f"missing required key: {key}")
-    return event
+    return EventEnvelopeV1.model_validate(event).model_dump(by_alias=True)

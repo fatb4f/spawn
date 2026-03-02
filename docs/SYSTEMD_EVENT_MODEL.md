@@ -9,7 +9,7 @@ Make `spawn` systemd-first:
 
 ### Control plane
 - `spawnctl` <-> `spawnd` over Unix domain socket gRPC.
-- API contract: `proto/spawn/v1/spawn_control.proto`.
+- API contract: `api/proto/spawn/v1/spawn_control.proto`.
 - Runtime API server currently binds `%t/spawn/spawn.sock`.
 - Full `spawn.socket` activation remains a follow-up.
 

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from spawn.contracts import make_event_envelope, utc_now
+from spawn.namespaces import CODEX, event_type
 
 
 @dataclass
@@ -152,23 +153,23 @@ def main() -> int:
             if key not in state.known_sessions:
                 state.known_sessions.add(key)
                 state.session_mtime[key] = mtime
-                emit("codex.session.started", {"path": key, "mtime_epoch": int(mtime)})
+                emit(event_type(CODEX.session, "started"), {"path": key, "mtime_epoch": int(mtime)})
             elif old is not None and mtime > old:
                 state.session_mtime[key] = mtime
-                emit("codex.session.updated", {"path": key, "mtime_epoch": int(mtime)})
+                emit(event_type(CODEX.session, "updated"), {"path": key, "mtime_epoch": int(mtime)})
 
         running = is_codex_running()
         if running and not state.codex_running:
-            emit("codex.session.started", {"by": "process"})
+            emit(event_type(CODEX.session, "started"), {"by": "process"})
         if (not running) and state.codex_running:
-            emit("codex.session.ended", {"by": "process"})
+            emit(event_type(CODEX.session, "ended"), {"by": "process"})
         state.codex_running = running
 
         if running and latest_mtime > 0:
             age = time.time() - latest_mtime
             if age >= stall_seconds and (time.time() - state.last_stall_emit) >= max(60, stall_seconds // 2):
                 emit(
-                    "codex.session.stalled",
+                    event_type(CODEX.session, "stalled"),
                     {
                         "latest_path": str(latest_path) if latest_path else None,
                         "seconds_since_session_write": int(age),
@@ -179,16 +180,16 @@ def main() -> int:
         for line in read_new_refresh_lines(refresh_log, state):
             lowered = line.lower()
             if "warn: context generator failed" in lowered or "error" in lowered:
-                emit("codex.meta.refresh.failed", {"line": line})
+                emit(event_type(CODEX.session_meta, "refresh.failed"), {"line": line})
             if "resume" in lowered and ("fail" in lowered or "error" in lowered):
-                emit("codex.resume.failed", {"line": line})
+                emit(event_type(CODEX.session_resume, "failed"), {"line": line})
 
         current_prompt_hash = file_hash(prompt_path)
         if state.prompt_hash is None:
             state.prompt_hash = current_prompt_hash
         elif current_prompt_hash is not None and current_prompt_hash != state.prompt_hash:
             emit(
-                "codex.meta.prompt.changed",
+                event_type(CODEX.session_meta, "prompt.changed"),
                 {"path": str(prompt_path), "sha256": current_prompt_hash},
             )
             state.prompt_hash = current_prompt_hash
@@ -198,7 +199,7 @@ def main() -> int:
             state.config_hash = current_config_hash
         elif current_config_hash is not None and current_config_hash != state.config_hash:
             emit(
-                "codex.config.changed",
+                event_type(CODEX.config, "changed"),
                 {"path": str(config_path), "sha256": current_config_hash},
             )
             state.config_hash = current_config_hash
@@ -216,7 +217,7 @@ def main() -> int:
                 elif restarts > prev:
                     state.service_restarts[service_name] = restarts
                     emit(
-                        "codex.watcher.service.restarted",
+                        event_type(CODEX.session_service, "restarted"),
                         {"service": service_name, "restarts": restarts},
                     )
 

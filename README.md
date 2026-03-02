@@ -5,15 +5,14 @@ Spawn fabric runtime repository.
 ## Scope
 - `spawnd`: daemon runtime substrate
 - `spawnctl`: thin orchestration/operator client
+- contracts: spec-first event/action schemas under `api/` + `proto/`
 
-## Implemented
-- `bin/spawnd codex-session-refresh`
-  - consumes events from `codex-event-source`
-  - triggers `codex-refresh-context --wait-session-write` for:
-    - `codex.session.started`
-    - `codex.session.ended`
-  - writes JSONL execution rows to:
-    - `~/.local/state/codex/spawn/spawnd-codex-session-refresh.jsonl`
+## Namespaces (current)
+- `codex.session.*`
+- `codex.session.meta.*`
+- `codex.session.resume.*`
+- `codex.session.service.*`
+- `codex.config.*`
 
 - codex helpers owned by spawn:
   - `bin/codex-event-source`
@@ -25,7 +24,7 @@ Spawn fabric runtime repository.
 ## Run
 ```bash
 cd ~/src/spawn
-./bin/spawnd codex-session-refresh
+spawnctl daemon serve-api
 ```
 
 ## Install (packaged)
@@ -52,7 +51,18 @@ Package source lives under `src/spawn/`.
   - `spawnctl codex-session list`
 
 Proto contract:
-- `proto/spawn/v1/spawn_control.proto`
+- `api/proto/spawn/v1/spawn_control.proto`
+
+## Spec-first workflow (as in spec-hydra)
+- regenerate derived schemas:
+  - `./scripts/gen.sh`
+- verify generated artifacts are committed:
+  - `./scripts/check_gen.sh`
+
+Canonical contract inputs:
+- `api/openapi/openapi.yaml`
+- `api/proto/spawn/v1/spawn_control.proto`
+- `src/spawn/schema_models.py`
 
 ## Optional dependencies
 - `xdg-base-dirs` (`python-xdg-base-dirs`) for strict XDG path resolution.
