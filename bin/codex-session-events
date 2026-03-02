@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SESSIONS_ROOT="${CODEX_SESSIONS_ROOT:-$HOME/.config/codex/sessions}"
+BACKEND="${1:-auto}"
+POLL_SECONDS="${POLL_SECONDS:-1}"
+
+emit_event() {
+  local path="$1"
+  printf '{"topic":"codex.session.updated","source":"codex-session-events","path":%s,"ts":"%s"}\n' \
+    "$(printf '%s' "$path" | python -c 'import json,sys; print(json.dumps(sys.stdin.read()))')" \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+}
+
+latest_session_file() {
+  find "$SESSIONS_ROOT" -type f -name '*.jsonl' -printf '%T@ %p\n' 2>/dev/null \
+    | sort -nr \
+    | head -n1 \
+    | awk '{print $2}'
+}
+
+run_inotify() {
+  inotifywait -m -r -e close_write,create,moved_to --format '%w%f' "$SESSIONS_ROOT" 2>/dev/null \
+    | while IFS= read -r path; do
+        case "$path" in
+          *.jsonl) emit_event "$path" ;;
+        esac
+      done
+}
+
+run_poll() {
+  local last=""
+  while true; do
+    local current
+    current="$(latest_session_file)"
+    if [[ -n "$current" && "$current" != "$last" ]]; then
+      last="$current"
+      emit_event "$current"
+    fi
+    sleep "$POLL_SECONDS"
+  done
+}
+
+if [[ ! -d "$SESSIONS_ROOT" ]]; then
+  mkdir -p "$SESSIONS_ROOT"
+fi
+
+if [[ "$BACKEND" == "inotify" ]]; then
+  run_inotify
+  exit 0
+fi
+
+if [[ "$BACKEND" == "poll" ]]; then
+  run_poll
+  exit 0
+fi
+
+if command -v inotifywait >/dev/null 2>&1; then
+  run_inotify
+else
+  run_poll
+fi

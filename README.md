@@ -15,6 +15,13 @@ Spawn fabric runtime repository.
   - writes JSONL execution rows to:
     - `~/.local/state/codex/spawn/spawnd-codex-session-refresh.jsonl`
 
+- codex helpers owned by spawn:
+  - `bin/codex-event-source`
+  - `bin/codex-config-validate`
+  - `bin/codex-resume-diagnose`
+  - `bin/codex-alert-log`
+  - `bin/codex-session-events`
+
 ## Run
 ```bash
 cd ~/src/spawn

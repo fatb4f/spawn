@@ -107,7 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--source-command",
-        default="python /home/_404/src/watcher/bin/codex-event-source",
+        default="python /home/_404/src/spawn/bin/codex-event-source",
     )
     p.add_argument(
         "--refresh-command",
