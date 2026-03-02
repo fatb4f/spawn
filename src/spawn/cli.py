@@ -5,16 +5,24 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from pathlib import Path
 
-from spawn import codex_session_ops
+import grpc
+
+from spawn.runtime import codex_session_ops
+from spawn.adapters.grpc_server import default_socket_path, grpc_target_from_path
+from spawn.v1 import spawn_control_pb2 as pb2
+from spawn.v1 import spawn_control_pb2_grpc as pb2_grpc
 
 
 def default_socket_path_str() -> str:
-    import os
-    from pathlib import Path
+    return str(default_socket_path())
 
-    runtime = Path(os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"))
-    return str(runtime / "spawn" / "spawn.sock")
+
+def _channel_and_stub(path: str):
+    target = grpc_target_from_path(Path(path).expanduser() if path else default_socket_path())
+    channel = grpc.insecure_channel(target)
+    return channel, pb2_grpc.SpawnControlStub(channel)
 
 
 def cmd_run_transient_refresh(args: argparse.Namespace) -> int:
@@ -27,17 +35,19 @@ def cmd_run_transient_refresh(args: argparse.Namespace) -> int:
 
 
 def cmd_daemon_serve_api(args: argparse.Namespace) -> int:
-    from spawn.grpc_server import serve
-    from spawn.grpc_client import socket_path
+    from spawn.adapters.grpc_server import serve
 
-    return serve(socket_path(args.socket_path))
+    return serve(Path(args.socket_path).expanduser())
 
 
 def cmd_daemon_health(args: argparse.Namespace) -> int:
-    from spawn import grpc_client
-
     try:
-        ok, msg = grpc_client.health(args.socket_path)
+        channel, stub = _channel_and_stub(args.socket_path)
+        try:
+            resp = stub.Health(pb2.HealthRequest(), timeout=2)
+            ok, msg = bool(resp.ok), resp.message
+        finally:
+            channel.close()
     except Exception as exc:
         print(f"daemon unavailable: {exc}", file=sys.stderr)
         return 1
@@ -49,17 +59,21 @@ def cmd_daemon_health(args: argparse.Namespace) -> int:
 
 
 def cmd_codex_session_refresh(args: argparse.Namespace) -> int:
-    from spawn import grpc_client
-
     try:
-        resp = grpc_client.refresh(
-            path=args.socket_path,
-            request_id=args.request_id,
-            event_id=args.event_id,
-            refresh_command=args.refresh_command,
-            log_path=args.log_path,
-            wait=args.wait,
-        )
+        channel, stub = _channel_and_stub(args.socket_path)
+        try:
+            resp = stub.CodexSessionRefresh(
+                pb2.CodexSessionRefreshRequest(
+                    request_id=args.request_id,
+                    event_id=args.event_id,
+                    refresh_command=args.refresh_command,
+                    log_path=args.log_path,
+                    wait=args.wait,
+                ),
+                timeout=8,
+            )
+        finally:
+            channel.close()
     except Exception as exc:
         print(f"daemon unavailable: {exc}", file=sys.stderr)
         return 1
@@ -71,15 +85,19 @@ def cmd_codex_session_refresh(args: argparse.Namespace) -> int:
 
 
 def cmd_codex_session_status(args: argparse.Namespace) -> int:
-    from spawn import grpc_client
-
     try:
-        resp = grpc_client.status(
-            path=args.socket_path,
-            request_id=args.request_id,
-            log_path=args.log_path,
-            wait_seconds=args.wait_seconds,
-        )
+        channel, stub = _channel_and_stub(args.socket_path)
+        try:
+            resp = stub.CodexSessionStatus(
+                pb2.CodexSessionStatusRequest(
+                    request_id=args.request_id,
+                    log_path=args.log_path,
+                    wait_seconds=args.wait_seconds,
+                ),
+                timeout=max(2, int(args.wait_seconds) + 2),
+            )
+        finally:
+            channel.close()
     except Exception as exc:
         print(f"daemon unavailable: {exc}", file=sys.stderr)
         return 1
@@ -95,10 +113,15 @@ def cmd_codex_session_status(args: argparse.Namespace) -> int:
 
 
 def cmd_codex_session_logs(args: argparse.Namespace) -> int:
-    from spawn import grpc_client
-
     try:
-        resp = grpc_client.logs(path=args.socket_path, request_id=args.request_id, lines=args.lines)
+        channel, stub = _channel_and_stub(args.socket_path)
+        try:
+            resp = stub.CodexSessionLogs(
+                pb2.CodexSessionLogsRequest(request_id=args.request_id, lines=args.lines),
+                timeout=5,
+            )
+        finally:
+            channel.close()
     except Exception as exc:
         print(f"daemon unavailable: {exc}", file=sys.stderr)
         return 1
@@ -110,17 +133,22 @@ def cmd_codex_session_logs(args: argparse.Namespace) -> int:
 
 
 def cmd_codex_session_list(args: argparse.Namespace) -> int:
-    from spawn import grpc_client
-
     try:
-        resp = grpc_client.list_runs(path=args.socket_path, log_path=args.log_path)
+        channel, stub = _channel_and_stub(args.socket_path)
+        try:
+            resp = stub.CodexSessionList(pb2.CodexSessionListRequest(log_path=args.log_path), timeout=5)
+        finally:
+            channel.close()
     except Exception as exc:
         print(f"daemon unavailable: {exc}", file=sys.stderr)
         return 1
     if not resp.ok:
         print(resp.message or "failed", file=sys.stderr)
         return 1
-    rows = grpc_client.parse_rows_json(resp.rows_json)
+    try:
+        rows = json.loads(resp.rows_json) if resp.rows_json else []
+    except json.JSONDecodeError:
+        rows = []
     print(json.dumps(rows, sort_keys=True, indent=2))
     return 0
 

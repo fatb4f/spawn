@@ -7,7 +7,7 @@ import time
 import uuid
 from typing import Any
 
-from spawn.schema_models import ActionRequestV1, ActionResultV1, EventEnvelopeV1
+from spawn.contracts.models import ActionRequestV1, ActionResultV1, EventEnvelopeV1
 
 
 def utc_now() -> str:

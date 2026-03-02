@@ -19,8 +19,8 @@ dependencies = [
 ]
 
 [project.scripts]
-spawnd = "spawn.spawnd:main"
-spawnctl = "spawn.spawnctl:main"
+spawnd = "spawn.core.service:main"
+spawnctl = "spawn.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spawn"]

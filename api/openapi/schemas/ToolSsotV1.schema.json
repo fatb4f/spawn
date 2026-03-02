@@ -33,10 +33,6 @@
     },
     "ContractSpec": {
       "properties": {
-        "canonical_path": {
-          "title": "Canonical Path",
-          "type": "string"
-        },
         "kind": {
           "enum": [
             "proto",
@@ -47,14 +43,27 @@
           "title": "Kind",
           "type": "string"
         },
+        "lifecycle": {
+          "default": "canonical",
+          "enum": [
+            "canonical",
+            "derived"
+          ],
+          "title": "Lifecycle",
+          "type": "string"
+        },
         "name": {
           "title": "Name",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
           "type": "string"
         }
       },
       "required": [
         "name",
-        "canonical_path",
+        "path",
         "kind"
       ],
       "title": "ContractSpec",

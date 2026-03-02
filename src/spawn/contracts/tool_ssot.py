@@ -20,7 +20,8 @@ class DependencySpec(SsotModel):
 
 class ContractSpec(SsotModel):
     name: str
-    canonical_path: str
+    path: str
+    lifecycle: Literal["canonical", "derived"] = "canonical"
     kind: Literal["proto", "openapi", "json_schema", "pydantic_model"]
 
 

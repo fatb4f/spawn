@@ -8,8 +8,8 @@ import time
 import uuid
 from pathlib import Path
 
-from spawn import spawnd
-from spawn.contracts import make_action_result, utc_now
+from spawn.contracts.envelopes import make_action_result, utc_now
+from spawn.core import service as spawnd
 
 
 def default_log_path() -> Path:

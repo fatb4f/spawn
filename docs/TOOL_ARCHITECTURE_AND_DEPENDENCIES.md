@@ -17,7 +17,7 @@ Define the stable architecture, boundaries, and dependency policy for `spawn` so
   - RPC contract source: `api/proto/spawn/v1/spawn_control.proto`.
 - Data plane:
   - Event envelopes, action requests/results.
-  - Contract source: `src/spawn/schema_models.py`.
+  - Contract source: `src/spawn/contracts/models.py`.
   - Generated JSON Schemas: `api/openapi/schemas/*.schema.json`.
 - Runtime plane:
   - systemd unit lifecycle, journald, transient execution.
@@ -46,13 +46,13 @@ Define the stable architecture, boundaries, and dependency policy for `spawn` so
 
 ### Canonical inputs
 - `api/proto/spawn/v1/spawn_control.proto`
-- `api/openapi/openapi.yaml`
-- `src/spawn/schema_models.py`
+- `src/spawn/contracts/models.py`
 
 ### Derived artifacts
 - `src/spawn/v1/spawn_control_pb2.py`
 - `src/spawn/v1/spawn_control_pb2_grpc.py`
 - `api/openapi/schemas/*.schema.json`
+- `api/openapi/openapi.yaml`
 - `api/openapi/tool_ssot.json` (validated against `ToolSsotV1.schema.json`)
 
 ### Commands
@@ -62,6 +62,16 @@ Define the stable architecture, boundaries, and dependency policy for `spawn` so
 ### Rule
 - Never hand-edit generated files.
 - Changes to contracts must be additive unless explicitly version-bumped.
+
+### Thin-client model
+- Generated thin clients:
+  - `src/spawn/v1/spawn_control_pb2.py`
+  - `src/spawn/v1/spawn_control_pb2_grpc.py`
+- Hand-authored transport adapter:
+  - `src/spawn/adapters/grpc_client.py`
+- Rule:
+  - generated stubs own wire types and RPC method shape
+  - adapter/CLI own retries, timeouts, and operator UX
 
 ## Dependency Policy
 

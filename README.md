@@ -7,6 +7,13 @@ Spawn fabric runtime repository.
 - `spawnctl`: thin orchestration/operator client
 - contracts: spec-first event/action schemas under `api/` + `proto/`
 
+## Source Layout
+- `src/spawn/cli.py`
+- `src/spawn/core/service.py`
+- `src/spawn/contracts/*`
+- `src/spawn/runtime/*`
+- `src/spawn/adapters/*`
+
 ## Namespaces (current)
 - `codex.session.*`
 - `codex.session.meta.*`
@@ -53,9 +60,13 @@ Proto contract:
   - `./scripts/check_gen.sh`
 
 Canonical contract inputs:
-- `api/openapi/openapi.yaml`
 - `api/proto/spawn/v1/spawn_control.proto`
-- `src/spawn/schema_models.py`
+- `src/spawn/contracts/models.py`
+
+Derived artifacts:
+- `api/openapi/openapi.yaml`
+- `api/openapi/schemas/*.schema.json`
+- `src/spawn/v1/*_pb2*.py`
 
 ## Optional dependencies
 - `xdg-base-dirs` (`python-xdg-base-dirs`) for strict XDG path resolution.

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import grpc
 
-from spawn import codex_session_ops
+from spawn.runtime import codex_session_ops
 from spawn.v1 import spawn_control_pb2 as pb2
 from spawn.v1 import spawn_control_pb2_grpc as pb2_grpc
 

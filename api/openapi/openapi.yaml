@@ -2,17 +2,19 @@ openapi: 3.1.0
 info:
   title: spawn control and event contracts
   version: 0.1.0
-  description: |
-    Canonical API surface for spawn control-plane and contract references.
+  description: Derived OpenAPI component catalog for spawn contracts.
 servers: []
 paths: {}
 components:
   schemas:
-    EventEnvelopeV1:
-      $ref: "./schemas/EventEnvelopeV1.schema.json"
     ActionRequestV1:
-      $ref: "./schemas/ActionRequestV1.schema.json"
+      $ref: ./schemas/ActionRequestV1.schema.json
     ActionResultV1:
-      $ref: "./schemas/ActionResultV1.schema.json"
+      $ref: ./schemas/ActionResultV1.schema.json
+    EventEnvelopeV1:
+      $ref: ./schemas/EventEnvelopeV1.schema.json
     ToolSsotV1:
-      $ref: "./schemas/ToolSsotV1.schema.json"
+      $ref: ./schemas/ToolSsotV1.schema.json
+x-derived-from:
+- src/spawn/contracts/models.py
+- api/proto/spawn/v1/spawn_control.proto

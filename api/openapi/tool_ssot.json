@@ -1,41 +1,45 @@
 {
   "components": [
     {
-      "entrypoint": "spawn.spawnd:main",
+      "entrypoint": "spawn.core.service:main",
       "name": "spawnd",
       "role": "daemon"
     },
     {
-      "entrypoint": "spawn.spawnctl:main",
+      "entrypoint": "spawn.cli:main",
       "name": "spawnctl",
       "role": "cli"
     },
     {
-      "entrypoint": "src/spawn/schema_models.py",
+      "entrypoint": "src/spawn/contracts/models.py",
       "name": "contracts",
       "role": "schema"
     }
   ],
   "contracts": [
     {
-      "canonical_path": "api/proto/spawn/v1/spawn_control.proto",
       "kind": "proto",
-      "name": "spawn_control"
+      "lifecycle": "canonical",
+      "name": "spawn_control",
+      "path": "api/proto/spawn/v1/spawn_control.proto"
     },
     {
-      "canonical_path": "api/openapi/openapi.yaml",
       "kind": "openapi",
-      "name": "openapi_contracts"
+      "lifecycle": "derived",
+      "name": "openapi_component_catalog",
+      "path": "api/openapi/openapi.yaml"
     },
     {
-      "canonical_path": "src/spawn/schema_models.py",
       "kind": "pydantic_model",
-      "name": "runtime_contract_models"
+      "lifecycle": "canonical",
+      "name": "runtime_contract_models",
+      "path": "src/spawn/contracts/models.py"
     },
     {
-      "canonical_path": "api/openapi/schemas/ToolSsotV1.schema.json",
       "kind": "json_schema",
-      "name": "tool_ssot"
+      "lifecycle": "derived",
+      "name": "tool_ssot",
+      "path": "api/openapi/schemas/ToolSsotV1.schema.json"
     }
   ],
   "dependencies": [

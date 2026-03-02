@@ -14,7 +14,7 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from spawn.contracts import make_action_request, make_action_result, parse_event_envelope, utc_now
+from spawn.contracts.envelopes import make_action_request, make_action_result, parse_event_envelope, utc_now
 
 try:
     from dataconfy import ConfigManager
@@ -51,7 +51,7 @@ class SpawnConfigData:
 
 if BaseModel is not None:
     class CodexSessionRefreshModel(BaseModel):
-        source_command: str = "python3 -m spawn.codex_event_source"
+        source_command: str = "python3 -m spawn.runtime.codex_event_source"
         refresh_command: str = "codex-refresh-context --wait-session-write"
         topics: list[str] = Field(default_factory=lambda: ["codex.session.started", "codex.session.ended"])
         debounce_seconds: float = 2.0
@@ -80,7 +80,7 @@ def default_values() -> dict[str, Any]:
     xdg_state = xdg_path("XDG_STATE_HOME", "~/.local/state")
     return {
         "codex_session_refresh": {
-            "source_command": "python3 -m spawn.codex_event_source",
+            "source_command": "python3 -m spawn.runtime.codex_event_source",
             "refresh_command": "codex-refresh-context --wait-session-write",
             "topics": ["codex.session.started", "codex.session.ended"],
             "debounce_seconds": 2.0,
@@ -211,7 +211,9 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
     cfg = load_config(Path(args.config).expanduser())
     section = cfg["codex_session_refresh"]
 
-    source_command = args.source_command or str(section.get("source_command", "python3 -m spawn.codex_event_source"))
+    source_command = args.source_command or str(
+        section.get("source_command", "python3 -m spawn.runtime.codex_event_source")
+    )
     refresh_command = args.refresh_command or str(
         section.get("refresh_command", "codex-refresh-context --wait-session-write")
     )
@@ -316,7 +318,7 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
 
 
 def cmd_api_serve(args: argparse.Namespace) -> int:
-    from spawn.grpc_server import serve
+    from spawn.adapters.grpc_server import serve
 
     socket_path = Path(args.socket_path).expanduser()
     return serve(socket_path)

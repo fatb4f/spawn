@@ -6,11 +6,12 @@ cd "$ROOT"
 
 # Canonical contract sources (hand-edited):
 # - api/proto/spawn/v1/spawn_control.proto
-# - src/spawn/schema_models.py
+# - src/spawn/contracts/models.py
 test -f api/proto/spawn/v1/spawn_control.proto
-test -f src/spawn/schema_models.py
+test -f src/spawn/contracts/models.py
 
 uv run --with grpcio-tools python scripts/gen_grpc.py
 PYTHONPATH=src uv run python scripts/export_schemas.py
+PYTHONPATH=src uv run python scripts/derive_openapi.py
 
 echo "gen: ok"

@@ -6,8 +6,8 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from spawn.schema_models import ActionRequestV1, ActionResultV1, EventEnvelopeV1
-from spawn.tool_ssot import ComponentSpec, ContractSpec, DependencySpec, ToolSsotV1
+from spawn.contracts.models import ActionRequestV1, ActionResultV1, EventEnvelopeV1
+from spawn.contracts.tool_ssot import ComponentSpec, ContractSpec, DependencySpec, ToolSsotV1
 
 OUT = Path("api/openapi/schemas")
 SSOT_OUT = Path("api/openapi/tool_ssot.json")
@@ -29,9 +29,9 @@ def main() -> int:
     ssot = ToolSsotV1(
         version="0.1.0",
         components=[
-            ComponentSpec(name="spawnd", role="daemon", entrypoint="spawn.spawnd:main"),
-            ComponentSpec(name="spawnctl", role="cli", entrypoint="spawn.spawnctl:main"),
-            ComponentSpec(name="contracts", role="schema", entrypoint="src/spawn/schema_models.py"),
+            ComponentSpec(name="spawnd", role="daemon", entrypoint="spawn.core.service:main"),
+            ComponentSpec(name="spawnctl", role="cli", entrypoint="spawn.cli:main"),
+            ComponentSpec(name="contracts", role="schema", entrypoint="src/spawn/contracts/models.py"),
         ],
         dependencies=[
             DependencySpec(name="grpcio", kind="runtime"),
@@ -50,22 +50,26 @@ def main() -> int:
             ContractSpec(
                 name="spawn_control",
                 kind="proto",
-                canonical_path="api/proto/spawn/v1/spawn_control.proto",
+                path="api/proto/spawn/v1/spawn_control.proto",
+                lifecycle="canonical",
             ),
             ContractSpec(
-                name="openapi_contracts",
+                name="openapi_component_catalog",
                 kind="openapi",
-                canonical_path="api/openapi/openapi.yaml",
+                path="api/openapi/openapi.yaml",
+                lifecycle="derived",
             ),
             ContractSpec(
                 name="runtime_contract_models",
                 kind="pydantic_model",
-                canonical_path="src/spawn/schema_models.py",
+                path="src/spawn/contracts/models.py",
+                lifecycle="canonical",
             ),
             ContractSpec(
                 name="tool_ssot",
                 kind="json_schema",
-                canonical_path="api/openapi/schemas/ToolSsotV1.schema.json",
+                path="api/openapi/schemas/ToolSsotV1.schema.json",
+                lifecycle="derived",
             ),
         ],
     )

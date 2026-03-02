@@ -8,7 +8,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from spawn.contracts import make_event_envelope
+from spawn.contracts.envelopes import make_event_envelope
 
 
 def main() -> int:

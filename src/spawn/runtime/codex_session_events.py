@@ -6,7 +6,7 @@ import argparse
 import time
 from pathlib import Path
 
-from spawn.contracts import make_event_envelope
+from spawn.contracts.envelopes import make_event_envelope
 
 
 def latest_session_file(sessions_root: Path) -> str | None:

@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from typing import Any
 
-from spawn.contracts import utc_now
+from spawn.contracts.envelopes import utc_now
 
 
 def latest_session_file(sessions_root: Path) -> str | None:

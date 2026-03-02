@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from spawn.contracts import make_event_envelope, utc_now
-from spawn.namespaces import CODEX, event_type
+from spawn.contracts.envelopes import make_event_envelope, utc_now
+from spawn.contracts.namespaces import CODEX, event_type
 
 
 @dataclass
