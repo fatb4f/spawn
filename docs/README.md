@@ -5,3 +5,4 @@ Shared cross-repo docs are maintained in `fabric-docs`.
 
 ## Documents
 - `SYSTEMD_EVENT_MODEL.md`: systemd-first event architecture, contracts, units, and migration locks.
+- `TOOL_ARCHITECTURE_AND_DEPENDENCIES.md`: architecture boundaries, dependency policy, and SSOT schema references.

@@ -14,3 +14,5 @@ components:
       $ref: "./schemas/ActionRequestV1.schema.json"
     ActionResultV1:
       $ref: "./schemas/ActionResultV1.schema.json"
+    ToolSsotV1:
+      $ref: "./schemas/ToolSsotV1.schema.json"

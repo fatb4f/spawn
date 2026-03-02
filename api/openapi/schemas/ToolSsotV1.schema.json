@@ -1,0 +1,139 @@
+{
+  "$defs": {
+    "ComponentSpec": {
+      "properties": {
+        "entrypoint": {
+          "default": "",
+          "title": "Entrypoint",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "role": {
+          "enum": [
+            "daemon",
+            "cli",
+            "adapter",
+            "core",
+            "schema",
+            "generated"
+          ],
+          "title": "Role",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "role"
+      ],
+      "title": "ComponentSpec",
+      "type": "object"
+    },
+    "ContractSpec": {
+      "properties": {
+        "canonical_path": {
+          "title": "Canonical Path",
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "proto",
+            "openapi",
+            "json_schema",
+            "pydantic_model"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "canonical_path",
+        "kind"
+      ],
+      "title": "ContractSpec",
+      "type": "object"
+    },
+    "DependencySpec": {
+      "properties": {
+        "kind": {
+          "enum": [
+            "runtime",
+            "build",
+            "dev"
+          ],
+          "title": "Kind",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "note": {
+          "default": "",
+          "title": "Note",
+          "type": "string"
+        },
+        "required": {
+          "default": true,
+          "title": "Required",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "kind"
+      ],
+      "title": "DependencySpec",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "components": {
+      "items": {
+        "$ref": "#/$defs/ComponentSpec"
+      },
+      "title": "Components",
+      "type": "array"
+    },
+    "contracts": {
+      "items": {
+        "$ref": "#/$defs/ContractSpec"
+      },
+      "title": "Contracts",
+      "type": "array"
+    },
+    "dependencies": {
+      "items": {
+        "$ref": "#/$defs/DependencySpec"
+      },
+      "title": "Dependencies",
+      "type": "array"
+    },
+    "schema": {
+      "const": "tool_ssot_v1",
+      "default": "tool_ssot_v1",
+      "title": "Schema",
+      "type": "string"
+    },
+    "tool": {
+      "const": "spawn",
+      "default": "spawn",
+      "title": "Tool",
+      "type": "string"
+    },
+    "version": {
+      "default": "0.1.0",
+      "title": "Version",
+      "type": "string"
+    }
+  },
+  "title": "ToolSsotV1",
+  "type": "object"
+}

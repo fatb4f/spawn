@@ -1,0 +1,82 @@
+{
+  "components": [
+    {
+      "entrypoint": "spawn.spawnd:main",
+      "name": "spawnd",
+      "role": "daemon"
+    },
+    {
+      "entrypoint": "spawn.spawnctl:main",
+      "name": "spawnctl",
+      "role": "cli"
+    },
+    {
+      "entrypoint": "src/spawn/schema_models.py",
+      "name": "contracts",
+      "role": "schema"
+    }
+  ],
+  "contracts": [
+    {
+      "canonical_path": "api/proto/spawn/v1/spawn_control.proto",
+      "kind": "proto",
+      "name": "spawn_control"
+    },
+    {
+      "canonical_path": "api/openapi/openapi.yaml",
+      "kind": "openapi",
+      "name": "openapi_contracts"
+    },
+    {
+      "canonical_path": "src/spawn/schema_models.py",
+      "kind": "pydantic_model",
+      "name": "runtime_contract_models"
+    },
+    {
+      "canonical_path": "api/openapi/schemas/ToolSsotV1.schema.json",
+      "kind": "json_schema",
+      "name": "tool_ssot"
+    }
+  ],
+  "dependencies": [
+    {
+      "kind": "runtime",
+      "name": "grpcio",
+      "note": "",
+      "required": true
+    },
+    {
+      "kind": "runtime",
+      "name": "pydantic",
+      "note": "",
+      "required": true
+    },
+    {
+      "kind": "runtime",
+      "name": "dataconfy",
+      "note": "",
+      "required": true
+    },
+    {
+      "kind": "runtime",
+      "name": "xdg-base-dirs",
+      "note": "",
+      "required": true
+    },
+    {
+      "kind": "runtime",
+      "name": "protobuf",
+      "note": "",
+      "required": true
+    },
+    {
+      "kind": "build",
+      "name": "grpcio-tools",
+      "note": "Used only by scripts/gen.sh via uv --with",
+      "required": false
+    }
+  ],
+  "schema": "tool_ssot_v1",
+  "tool": "spawn",
+  "version": "0.1.0"
+}

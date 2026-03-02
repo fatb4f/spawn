@@ -7,12 +7,15 @@ import json
 from pathlib import Path
 
 from spawn.schema_models import ActionRequestV1, ActionResultV1, EventEnvelopeV1
+from spawn.tool_ssot import ComponentSpec, ContractSpec, DependencySpec, ToolSsotV1
 
 OUT = Path("api/openapi/schemas")
+SSOT_OUT = Path("api/openapi/tool_ssot.json")
 MODELS = {
     "EventEnvelopeV1": EventEnvelopeV1,
     "ActionRequestV1": ActionRequestV1,
     "ActionResultV1": ActionResultV1,
+    "ToolSsotV1": ToolSsotV1,
 }
 
 
@@ -22,6 +25,53 @@ def main() -> int:
         path = OUT / f"{name}.schema.json"
         path.write_text(json.dumps(model.model_json_schema(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
         print(path)
+
+    ssot = ToolSsotV1(
+        version="0.1.0",
+        components=[
+            ComponentSpec(name="spawnd", role="daemon", entrypoint="spawn.spawnd:main"),
+            ComponentSpec(name="spawnctl", role="cli", entrypoint="spawn.spawnctl:main"),
+            ComponentSpec(name="contracts", role="schema", entrypoint="src/spawn/schema_models.py"),
+        ],
+        dependencies=[
+            DependencySpec(name="grpcio", kind="runtime"),
+            DependencySpec(name="pydantic", kind="runtime"),
+            DependencySpec(name="dataconfy", kind="runtime"),
+            DependencySpec(name="xdg-base-dirs", kind="runtime"),
+            DependencySpec(name="protobuf", kind="runtime"),
+            DependencySpec(
+                name="grpcio-tools",
+                kind="build",
+                required=False,
+                note="Used only by scripts/gen.sh via uv --with",
+            ),
+        ],
+        contracts=[
+            ContractSpec(
+                name="spawn_control",
+                kind="proto",
+                canonical_path="api/proto/spawn/v1/spawn_control.proto",
+            ),
+            ContractSpec(
+                name="openapi_contracts",
+                kind="openapi",
+                canonical_path="api/openapi/openapi.yaml",
+            ),
+            ContractSpec(
+                name="runtime_contract_models",
+                kind="pydantic_model",
+                canonical_path="src/spawn/schema_models.py",
+            ),
+            ContractSpec(
+                name="tool_ssot",
+                kind="json_schema",
+                canonical_path="api/openapi/schemas/ToolSsotV1.schema.json",
+            ),
+        ],
+    )
+    SSOT_OUT.parent.mkdir(parents=True, exist_ok=True)
+    SSOT_OUT.write_text(json.dumps(ssot.model_dump(by_alias=True), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    print(SSOT_OUT)
     return 0
 
 
