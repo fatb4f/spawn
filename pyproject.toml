@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "spawn"
+version = "0.1.0"
+description = "Spawn daemon + CLI substrate"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "dataconfy>=0.0.1",
+  "grpcio>=1.78",
+  "pydantic>=2",
+  "protobuf>=6.0",
+  "xdg-base-dirs>=6",
+]
+
+[project.scripts]
+spawnd = "spawn.spawnd:main"
+spawnctl = "spawn.spawnctl:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spawn"]

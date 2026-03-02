@@ -1,11 +1,4 @@
-#!/usr/bin/env python3
-"""Shared runtime context resolver for watcher scripts.
-
-This module resolves effective user/host and key path roots using:
-1) explicit environment overrides
-2) dotfiles chezmoi data overrides (if available)
-3) current process user/hostname
-"""
+"""Shared runtime context resolver for spawn tools."""
 
 from __future__ import annotations
 
@@ -15,7 +8,6 @@ import re
 import socket
 from dataclasses import dataclass
 from pathlib import Path
-
 
 _KV_RE = re.compile(r'^\s*([A-Za-z0-9_]+)\s*:\s*"?([^"]*)"?\s*$')
 
@@ -56,8 +48,6 @@ class RuntimeContext:
     codex_state: Path
     codex_config_path: Path
     codex_sessions_root: Path
-    noctalia_settings_target: Path
-    noctalia_settings_source_legacy: Path
 
 
 def load_runtime_context() -> RuntimeContext:
@@ -77,23 +67,14 @@ def load_runtime_context() -> RuntimeContext:
 
     effective_user = env_user or data_user or current_user
     effective_host = env_host or data_host or current_host
-    effective_home = Path("/home") / effective_user
 
     return RuntimeContext(
         user=effective_user,
         host=effective_host,
-        home=effective_home,
+        home=Path("/home") / effective_user,
         dotfiles_source_dir=Path("/home") / effective_user / "src" / "dotfiles",
         codex_home=Path("/home") / effective_user / ".config" / "codex",
         codex_state=Path("/home") / effective_user / ".local" / "state" / "codex",
         codex_config_path=Path("/home") / effective_user / ".config" / "codex" / "config.toml",
         codex_sessions_root=Path("/home") / effective_user / ".config" / "codex" / "sessions",
-        noctalia_settings_target=Path("/home") / effective_user / ".config" / "noctalia" / "settings.json",
-        noctalia_settings_source_legacy=Path("/home")
-        / effective_user
-        / "src"
-        / "dotfiles"
-        / "dot_config"
-        / "noctalia"
-        / "settings.json",
     )
