@@ -28,5 +28,13 @@ cd ~/src/spawn
 ./bin/spawnd codex-session-refresh
 ```
 
+## XDG links
+Create local repo symlinks to runtime config/data:
+
+```bash
+cd ~/src/spawn
+./scripts/link_xdg_paths.sh
+```
+
 ## Documentation
 Shared standards and architecture live in `fabric-docs`.
