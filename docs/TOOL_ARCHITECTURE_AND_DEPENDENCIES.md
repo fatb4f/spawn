@@ -29,7 +29,7 @@ Define the stable architecture, boundaries, and dependency policy for `spawn` so
   - event taxonomy/namespaces
   - deterministic routing decisions
 - `adapters`:
-  - gRPC server/client
+  - gRPC server
   - systemd command integration (`systemctl`, `systemd-run`)
   - filesystem/log I/O
 - `interface`:
@@ -67,11 +67,10 @@ Define the stable architecture, boundaries, and dependency policy for `spawn` so
 - Generated thin clients:
   - `src/spawn/v1/spawn_control_pb2.py`
   - `src/spawn/v1/spawn_control_pb2_grpc.py`
-- Hand-authored transport adapter:
-  - `src/spawn/adapters/grpc_client.py`
 - Rule:
   - generated stubs own wire types and RPC method shape
-  - adapter/CLI own retries, timeouts, and operator UX
+  - `spawnctl` uses generated stubs directly for transport calls
+  - CLI owns retries, timeouts, and operator UX
 
 ## Dependency Policy
 

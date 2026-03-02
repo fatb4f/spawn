@@ -8,7 +8,7 @@ Spawn fabric runtime repository.
 - contracts: spec-first event/action schemas under `api/` + `proto/`
 
 ## Source Layout
-- `src/spawn/cli.py`
+- `src/spawn/cli/app.py`
 - `src/spawn/core/service.py`
 - `src/spawn/contracts/*`
 - `src/spawn/runtime/*`

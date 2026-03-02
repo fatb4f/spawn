@@ -20,7 +20,7 @@ dependencies = [
 
 [project.scripts]
 spawnd = "spawn.core.service:main"
-spawnctl = "spawn.cli:main"
+spawnctl = "spawn.cli.app:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/spawn"]

@@ -30,7 +30,7 @@ def main() -> int:
         version="0.1.0",
         components=[
             ComponentSpec(name="spawnd", role="daemon", entrypoint="spawn.core.service:main"),
-            ComponentSpec(name="spawnctl", role="cli", entrypoint="spawn.cli:main"),
+            ComponentSpec(name="spawnctl", role="cli", entrypoint="spawn.cli.app:main"),
             ComponentSpec(name="contracts", role="schema", entrypoint="src/spawn/contracts/models.py"),
         ],
         dependencies=[
