@@ -21,4 +21,3 @@ def channel_and_stub(path_value: str):
     target = grpc_target_from_path(socket_path(path_value))
     channel = grpc.insecure_channel(target)
     return channel, pb2_grpc.SpawnControlStub(channel)
-

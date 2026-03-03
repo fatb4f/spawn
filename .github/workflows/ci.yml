@@ -27,10 +27,19 @@ jobs:
           node-version: "22"
 
       - name: Sync dependencies
-        run: uv sync --frozen
+        run: uv sync --frozen --group dev
+
+      - name: Pre-commit (fast hooks)
+        run: uv run --group dev pre-commit run --all-files
 
       - name: Compile Python sources
         run: uv run python -m compileall src
+
+      - name: Docstring policy
+        run: uv run python scripts/docstrings_sync.py
+
+      - name: Mypy
+        run: uv run --group dev mypy
 
       - name: Check generated artifacts
         run: ./scripts/check_gen.sh

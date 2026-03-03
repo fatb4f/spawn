@@ -8,4 +8,3 @@ cd "$ROOT"
 git diff --exit-code docs/api
 
 echo "check-docs: clean"
-

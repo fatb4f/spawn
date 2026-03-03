@@ -15,27 +15,13 @@ import uuid
 from pathlib import Path
 from typing import Any
 
+from dataconfy import ConfigManager
+from pydantic import BaseModel, Field, ValidationError
 from spawn.contracts.envelopes import make_action_request, parse_event_envelope, utc_now
 from spawn.contracts.task_results import make_task_result
 from spawn.logging_utils import configure_logging
 from spawn.ssot.validate import validate_or_raise
-
-try:
-    from dataconfy import ConfigManager
-except ImportError:  # pragma: no cover - optional dependency
-    ConfigManager = None
-
-try:
-    from pydantic import BaseModel, Field, ValidationError
-except ImportError:  # pragma: no cover - optional dependency
-    BaseModel = None
-    Field = None
-    ValidationError = Exception
-
-try:
-    from xdg_base_dirs import xdg_cache_home, xdg_config_home, xdg_state_home
-except ImportError:  # pragma: no cover - optional dependency
-    xdg_cache_home = xdg_config_home = xdg_state_home = None
+from xdg_base_dirs import xdg_cache_home, xdg_config_home, xdg_state_home
 
 
 logger = logging.getLogger(__name__)
@@ -56,25 +42,27 @@ class SpawnConfigData:
     codex_session_refresh: CodexSessionRefreshData
 
 
-if BaseModel is not None:
-    class CodexSessionRefreshModel(BaseModel):
-        source_command: str = "python3 -m spawn.runtime.codex_event_source"
-        refresh_command: str = "codex-refresh-context --wait-session-write"
-        topics: list[str] = Field(default_factory=lambda: ["codex.session.started", "codex.session.ended"])
-        debounce_seconds: float = 2.0
-        log_path: str
-        execution_mode: str = "transient"
+class CodexSessionRefreshModel(BaseModel):
+    source_command: str = "python3 -m spawn.runtime.codex_event_source"
+    refresh_command: str = "codex-refresh-context --wait-session-write"
+    topics: list[str] = Field(
+        default_factory=lambda: ["codex.session.started", "codex.session.ended"]
+    )
+    debounce_seconds: float = 2.0
+    log_path: str
+    execution_mode: str = "transient"
 
-    class SpawnConfigModel(BaseModel):
-        codex_session_refresh: CodexSessionRefreshModel
+
+class SpawnConfigModel(BaseModel):
+    codex_session_refresh: CodexSessionRefreshModel
 
 
 def xdg_path(var: str, fallback: str) -> Path:
-    if var == "XDG_CACHE_HOME" and xdg_cache_home is not None:
+    if var == "XDG_CACHE_HOME":
         return xdg_cache_home()
-    if var == "XDG_CONFIG_HOME" and xdg_config_home is not None:
+    if var == "XDG_CONFIG_HOME":
         return xdg_config_home()
-    if var == "XDG_STATE_HOME" and xdg_state_home is not None:
+    if var == "XDG_STATE_HOME":
         return xdg_state_home()
     return Path(os.environ.get(var, fallback)).expanduser()
 
@@ -105,7 +93,7 @@ def default_toml_text() -> str:
         f'source_command = "{cfg["source_command"]}"',
         f'refresh_command = "{cfg["refresh_command"]}"',
         f"topics = [{topics}]",
-        f'debounce_seconds = {float(cfg["debounce_seconds"]):.1f}',
+        f"debounce_seconds = {float(cfg['debounce_seconds']):.1f}",
         f'log_path = "{cfg["log_path"]}"',
         f'execution_mode = "{cfg["execution_mode"]}"',
         "",
@@ -115,14 +103,14 @@ def default_toml_text() -> str:
 
 def write_default_config(path: Path, *, force: bool = False) -> None:
     if path.exists() and not force:
-        raise SystemExit(f"config already exists: {path} (use --write-config --force to overwrite)")
+        raise SystemExit(
+            f"config already exists: {path} (use --write-config --force to overwrite)"
+        )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(default_toml_text(), encoding="utf-8")
 
 
 def load_config_via_dataconfy(path: Path) -> dict[str, Any] | None:
-    if ConfigManager is None:
-        return None
     if path.suffix.lower() not in {".yaml", ".yml", ".json"}:
         return None
     cfg = default_values()
@@ -156,13 +144,11 @@ def load_config(path: Path) -> dict[str, Any]:
     section = loaded.get("codex_session_refresh")
     if isinstance(section, dict):
         cfg["codex_session_refresh"].update(section)
-    if BaseModel is not None:
-        try:
-            validated = SpawnConfigModel.model_validate(cfg)
-            return validated.model_dump()
-        except ValidationError as exc:
-            raise SystemExit(f"invalid config: {exc}") from exc
-    return cfg
+    try:
+        validated = SpawnConfigModel.model_validate(cfg)
+        return validated.model_dump()
+    except ValidationError as exc:
+        raise SystemExit(f"invalid config: {exc}") from exc
 
 
 def append_log(path: Path, row: dict[str, Any]) -> None:
@@ -238,7 +224,9 @@ def dispatch_transient_refresh(
         "NoNewPrivileges=yes",
         "--property",
         "PrivateTmp=yes",
-        os.environ.get("SPAWNCTL_BIN", str(Path.home() / ".local" / "bin" / "spawnctl")),
+        os.environ.get(
+            "SPAWNCTL_BIN", str(Path.home() / ".local" / "bin" / "spawnctl")
+        ),
         "__internal",
         "run-refresh",
         "--request-id",
@@ -283,7 +271,11 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
         raw_topics = section.get("topics", [])
         topics = {str(item).strip() for item in raw_topics if str(item).strip()}
     log_path = Path(args.log_path or str(section.get("log_path"))).expanduser()
-    execution_mode = (args.execution_mode or str(section.get("execution_mode", "transient"))).strip().lower()
+    execution_mode = (
+        (args.execution_mode or str(section.get("execution_mode", "transient")))
+        .strip()
+        .lower()
+    )
     logger.info(
         "starting codex session refresh loop",
         extra={
@@ -293,8 +285,12 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
         },
     )
 
-    xdg_path("XDG_CACHE_HOME", "~/.cache").joinpath("spawn").mkdir(parents=True, exist_ok=True)
-    xdg_path("XDG_STATE_HOME", "~/.local/state").joinpath("spawn").mkdir(parents=True, exist_ok=True)
+    xdg_path("XDG_CACHE_HOME", "~/.cache").joinpath("spawn").mkdir(
+        parents=True, exist_ok=True
+    )
+    xdg_path("XDG_STATE_HOME", "~/.local/state").joinpath("spawn").mkdir(
+        parents=True, exist_ok=True
+    )
 
     last_run = 0.0
     for line in iter_jsonl_from_command(source_command):
@@ -318,7 +314,9 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
             continue
 
         try:
-            validate_or_raise("event.envelope", to_ssot_event(event, run_id="codex-session-refresh"))
+            validate_or_raise(
+                "event.envelope", to_ssot_event(event, run_id="codex-session-refresh")
+            )
         except Exception as exc:
             append_log(
                 log_path,
@@ -405,7 +403,9 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
                     finished_at=finished,
                     stdout=out,
                     stderr=err,
-                    reason_code="DETERMINISTIC.OK" if rc == 0 else "INFRA.DISPATCH_FAILED",
+                    reason_code="DETERMINISTIC.OK"
+                    if rc == 0
+                    else "INFRA.DISPATCH_FAILED",
                 ),
             )
             logger.debug(
@@ -458,7 +458,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p = sub.add_parser("codex-session-refresh", help="Refresh codex context on session events")
+    p = sub.add_parser(
+        "codex-session-refresh", help="Refresh codex context on session events"
+    )
     p.add_argument("--config", default=str(default_config_path()))
     p.add_argument(
         "--write-config",
@@ -481,7 +483,9 @@ def build_parser() -> argparse.ArgumentParser:
     p_api = sub.add_parser("api-serve", help="Run gRPC control API over Unix socket")
     p_api.add_argument(
         "--socket-path",
-        default=os.environ.get("SPAWN_SOCKET_PATH", f"/run/user/{os.getuid()}/spawn/spawn.sock"),
+        default=os.environ.get(
+            "SPAWN_SOCKET_PATH", f"/run/user/{os.getuid()}/spawn/spawn.sock"
+        ),
     )
     p_api.set_defaults(func=cmd_api_serve)
 

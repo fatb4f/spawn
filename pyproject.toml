@@ -23,5 +23,21 @@ dependencies = [
 spawnd = "spawn.core.service:main"
 spawnctl = "spawn.cli.app:main"
 
+[dependency-groups]
+dev = [
+  "mypy>=1.18.2",
+  "pre-commit>=4.3.0",
+  "ruff>=0.13.1",
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/spawn"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/spawn"]
+exclude = "(^src/spawn/v1/)"
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true

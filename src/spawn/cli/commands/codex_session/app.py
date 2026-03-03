@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import json
+from typing import Any, cast
 
 import typer
 
 from spawn.cli.shared import channel_and_stub, console
 from spawn.runtime import codex_session_ops
-from spawn.v1 import spawn_control_pb2 as pb2
+from spawn.v1 import spawn_control_pb2 as _pb2
 
+pb2: Any = cast(Any, _pb2)
 app = typer.Typer(help="Codex session actions")
 internal = typer.Typer(hidden=True)
 
@@ -134,7 +136,9 @@ def list_runs(
     try:
         channel, stub = channel_and_stub(socket_path_value)
         try:
-            resp = stub.CodexSessionList(pb2.CodexSessionListRequest(log_path=log_path), timeout=5)
+            resp = stub.CodexSessionList(
+                pb2.CodexSessionListRequest(log_path=log_path), timeout=5
+            )
         finally:
             channel.close()
     except Exception as exc:
@@ -149,4 +153,3 @@ def list_runs(
     except json.JSONDecodeError:
         rows = []
     console.print_json(json.dumps(rows, sort_keys=True))
-

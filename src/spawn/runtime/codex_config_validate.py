@@ -37,10 +37,19 @@ def main() -> int:
     paths = cfg.get("paths", {})
     default = cfg.get("default", {})
 
-    history_dir = Path(str(paths.get("history_dir", "~/.local/state/codex/history"))).expanduser()
-    logs_dir = Path(str(paths.get("logs_dir", "~/.local/state/codex/logs"))).expanduser()
+    history_dir = Path(
+        str(paths.get("history_dir", "~/.local/state/codex/history"))
+    ).expanduser()
+    logs_dir = Path(
+        str(paths.get("logs_dir", "~/.local/state/codex/logs"))
+    ).expanduser()
     prompt_file = Path(
-        str(default.get("model_instructions_file", "~/.local/state/codex/meta/effective_prompt.txt"))
+        str(
+            default.get(
+                "model_instructions_file",
+                "~/.local/state/codex/meta/effective_prompt.txt",
+            )
+        )
     ).expanduser()
 
     for d in (history_dir, logs_dir, prompt_file.parent):

@@ -51,7 +51,9 @@ def emit(topic: str, payload: dict[str, Any]) -> None:
         dedupe_key=f"{topic}:{dedupe_value}",
     )
     print(json.dumps(event, sort_keys=True), flush=True)
-    logger.debug("event emitted", extra={"topic": topic, "dedupe_key": event["dedupe_key"]})
+    logger.debug(
+        "event emitted", extra={"topic": topic, "dedupe_key": event["dedupe_key"]}
+    )
 
 
 def file_hash(path: Path) -> str | None:
@@ -74,7 +76,9 @@ def list_session_files(sessions_root: Path) -> list[Path]:
 
 
 def is_codex_running() -> bool:
-    cp = subprocess.run(["pgrep", "-x", "codex"], capture_output=True, text=True, check=False)
+    cp = subprocess.run(
+        ["pgrep", "-x", "codex"], capture_output=True, text=True, check=False
+    )
     return cp.returncode == 0
 
 
@@ -118,11 +122,17 @@ def read_user_service_restarts(service_name: str) -> int | None:
 
 def main() -> int:
     configure_logging(app_name="spawn.codex_event_source", default_format="json")
-    sessions_root = Path(os.environ.get("CODEX_SESSIONS_ROOT", "~/.config/codex/sessions")).expanduser()
-    codex_state = Path(os.environ.get("CODEX_STATE", "~/.local/state/codex")).expanduser()
+    sessions_root = Path(
+        os.environ.get("CODEX_SESSIONS_ROOT", "~/.config/codex/sessions")
+    ).expanduser()
+    codex_state = Path(
+        os.environ.get("CODEX_STATE", "~/.local/state/codex")
+    ).expanduser()
     refresh_log = codex_state / "meta" / "refresh.log"
     prompt_path = codex_state / "meta" / "effective_prompt.txt"
-    config_path = Path(os.environ.get("CODEX_CONFIG_PATH", "~/.config/codex/config.toml")).expanduser()
+    config_path = Path(
+        os.environ.get("CODEX_CONFIG_PATH", "~/.config/codex/config.toml")
+    ).expanduser()
     poll_seconds = float(os.environ.get("CODEX_EVENT_POLL_SECONDS", "1"))
     stall_seconds = int(os.environ.get("CODEX_STALL_SECONDS", "900"))
     services = [
@@ -158,16 +168,24 @@ def main() -> int:
         for path in files:
             mtime = path.stat().st_mtime
             latest_mtime = max(latest_mtime, mtime)
-            latest_path = path if latest_path is None or mtime >= latest_mtime else latest_path
+            latest_path = (
+                path if latest_path is None or mtime >= latest_mtime else latest_path
+            )
             key = str(path)
             old = state.session_mtime.get(key)
             if key not in state.known_sessions:
                 state.known_sessions.add(key)
                 state.session_mtime[key] = mtime
-                emit(event_type(CODEX.session, "started"), {"path": key, "mtime_epoch": int(mtime)})
+                emit(
+                    event_type(CODEX.session, "started"),
+                    {"path": key, "mtime_epoch": int(mtime)},
+                )
             elif old is not None and mtime > old:
                 state.session_mtime[key] = mtime
-                emit(event_type(CODEX.session, "updated"), {"path": key, "mtime_epoch": int(mtime)})
+                emit(
+                    event_type(CODEX.session, "updated"),
+                    {"path": key, "mtime_epoch": int(mtime)},
+                )
 
         running = is_codex_running()
         if running and not state.codex_running:
@@ -178,7 +196,9 @@ def main() -> int:
 
         if running and latest_mtime > 0:
             age = time.time() - latest_mtime
-            if age >= stall_seconds and (time.time() - state.last_stall_emit) >= max(60, stall_seconds // 2):
+            if age >= stall_seconds and (time.time() - state.last_stall_emit) >= max(
+                60, stall_seconds // 2
+            ):
                 emit(
                     event_type(CODEX.session, "stalled"),
                     {
@@ -198,7 +218,9 @@ def main() -> int:
         current_prompt_hash = file_hash(prompt_path)
         if state.prompt_hash is None:
             state.prompt_hash = current_prompt_hash
-        elif current_prompt_hash is not None and current_prompt_hash != state.prompt_hash:
+        elif (
+            current_prompt_hash is not None and current_prompt_hash != state.prompt_hash
+        ):
             emit(
                 event_type(CODEX.session_meta, "prompt.changed"),
                 {"path": str(prompt_path), "sha256": current_prompt_hash},
@@ -208,7 +230,9 @@ def main() -> int:
         current_config_hash = file_hash(config_path)
         if state.config_hash is None:
             state.config_hash = current_config_hash
-        elif current_config_hash is not None and current_config_hash != state.config_hash:
+        elif (
+            current_config_hash is not None and current_config_hash != state.config_hash
+        ):
             emit(
                 event_type(CODEX.config, "changed"),
                 {"path": str(config_path), "sha256": current_config_hash},

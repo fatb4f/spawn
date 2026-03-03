@@ -18,7 +18,9 @@ class JsonFormatter(logging.Formatter):
 
     def format(self, record: logging.LogRecord) -> str:
         payload: dict[str, Any] = {
-            "ts": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(timespec="milliseconds"),
+            "ts": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(
+                timespec="milliseconds"
+            ),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),
@@ -89,10 +91,14 @@ def configure_logging(
             handler.setFormatter(logging.Formatter("%(message)s"))
         except Exception:  # pragma: no cover
             handler = logging.StreamHandler(stream=sys.stderr)
-            handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+            handler.setFormatter(
+                logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+            )
     elif fmt == "plain":
         handler = logging.StreamHandler(stream=sys.stderr)
-        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s")
+        )
     else:
         handler = logging.StreamHandler(stream=sys.stderr)
         handler.setFormatter(JsonFormatter())
@@ -101,4 +107,3 @@ def configure_logging(
     root.addHandler(handler)
     logging.captureWarnings(True)
     return logging.getLogger(app_name)
-

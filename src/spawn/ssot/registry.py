@@ -56,7 +56,9 @@ class SchemaRegistry:
             file_name = str(item.get("file", "")).strip()
             canonical = bool(item.get("canonical", False))
             if not name or not version or not file_name:
-                raise ValueError("schema.index.json: each entry requires name/version/file")
+                raise ValueError(
+                    "schema.index.json: each entry requires name/version/file"
+                )
             path = self.root / file_name
             if not path.exists():
                 raise FileNotFoundError(f"schema file missing: {path}")
@@ -90,7 +92,9 @@ class SchemaRegistry:
             raise KeyError(f"unknown schema '{key}' (available: {available})")
         return schema
 
-    def validate(self, name: str, payload: dict[str, Any], version: str = "v1") -> list[str]:
+    def validate(
+        self, name: str, payload: dict[str, Any], version: str = "v1"
+    ) -> list[str]:
         schema = self.schema(name=name, version=version)
         validator = Draft202012Validator(schema, registry=self._registry)
         errors = []
@@ -112,7 +116,9 @@ class SchemaRegistry:
                 continue
 
             for ref in sorted(self._collect_refs(schema)):
-                target_schema, fragment = self._resolve_ref(schema, descriptor.file, ref)
+                target_schema, fragment = self._resolve_ref(
+                    schema, descriptor.file, ref
+                )
                 if target_schema is None:
                     errors.append(f"{descriptor.file}: unresolved $ref '{ref}'")
                     continue
@@ -133,7 +139,9 @@ class SchemaRegistry:
                 refs.update(self._collect_refs(item))
         return refs
 
-    def _resolve_ref(self, current_schema: dict[str, Any], current_file: str, ref: str) -> tuple[dict[str, Any] | None, str]:
+    def _resolve_ref(
+        self, current_schema: dict[str, Any], current_file: str, ref: str
+    ) -> tuple[dict[str, Any] | None, str]:
         base, fragment = urldefrag(ref)
         if not base:
             return current_schema, fragment

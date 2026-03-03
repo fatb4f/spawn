@@ -7,7 +7,12 @@ import json
 from pathlib import Path
 
 from spawn.contracts.models import ActionRequestV1, ActionResultV1, EventEnvelopeV1
-from spawn.contracts.tool_ssot import ComponentSpec, ContractSpec, DependencySpec, ToolSsotV1
+from spawn.contracts.tool_ssot import (
+    ComponentSpec,
+    ContractSpec,
+    DependencySpec,
+    ToolSsotV1,
+)
 
 OUT = Path("api/openapi/schemas")
 SSOT_OUT = Path("api/openapi/tool_ssot.json")
@@ -23,15 +28,24 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     for name, model in MODELS.items():
         path = OUT / f"{name}.schema.json"
-        path.write_text(json.dumps(model.model_json_schema(), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        path.write_text(
+            json.dumps(model.model_json_schema(), indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
         print(path)
 
     ssot = ToolSsotV1(
         version="0.1.0",
         components=[
-            ComponentSpec(name="spawnd", role="daemon", entrypoint="spawn.core.service:main"),
+            ComponentSpec(
+                name="spawnd", role="daemon", entrypoint="spawn.core.service:main"
+            ),
             ComponentSpec(name="spawnctl", role="cli", entrypoint="spawn.cli.app:main"),
-            ComponentSpec(name="contracts", role="schema", entrypoint="src/spawn/contracts/models.py"),
+            ComponentSpec(
+                name="contracts",
+                role="schema",
+                entrypoint="src/spawn/contracts/models.py",
+            ),
         ],
         dependencies=[
             DependencySpec(name="grpcio", kind="runtime"),
@@ -74,7 +88,10 @@ def main() -> int:
         ],
     )
     SSOT_OUT.parent.mkdir(parents=True, exist_ok=True)
-    SSOT_OUT.write_text(json.dumps(ssot.model_dump(by_alias=True), indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    SSOT_OUT.write_text(
+        json.dumps(ssot.model_dump(by_alias=True), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
     print(SSOT_OUT)
     return 0
 

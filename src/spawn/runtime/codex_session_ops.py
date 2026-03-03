@@ -65,7 +65,9 @@ def latest_result_for_request(path: Path, request_id: str) -> dict | None:
     return latest
 
 
-def run_transient_worker(request_id: str, event_id: str, refresh_command: str, log_path: Path | str) -> int:
+def run_transient_worker(
+    request_id: str, event_id: str, refresh_command: str, log_path: Path | str
+) -> int:
     path = Path(log_path).expanduser()
     queue_payload = {
         "schema_name": "work.queue",
@@ -103,7 +105,9 @@ def run_transient_worker(request_id: str, event_id: str, refresh_command: str, l
     return rc
 
 
-def dispatch_refresh(request_id: str | None, event_id: str | None, refresh_command: str, log_path: Path) -> tuple[int, str, str, str]:
+def dispatch_refresh(
+    request_id: str | None, event_id: str | None, refresh_command: str, log_path: Path
+) -> tuple[int, str, str, str]:
     rid = request_id or str(uuid.uuid4())
     eid = event_id or f"manual-{rid}"
     rc, out, err = spawnd.dispatch_transient_refresh(
@@ -112,7 +116,9 @@ def dispatch_refresh(request_id: str | None, event_id: str | None, refresh_comma
         refresh_command=refresh_command,
         log_path=log_path,
     )
-    logger.debug("refresh dispatched", extra={"request_id": rid, "event_id": eid, "rc": rc})
+    logger.debug(
+        "refresh dispatched", extra={"request_id": rid, "event_id": eid, "rc": rc}
+    )
     return rc, out, err, rid
 
 

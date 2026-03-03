@@ -27,7 +27,9 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    raw_event = os.environ.get("SPAWN_EVENT_JSON", os.environ.get("WATCH_EVENT_JSON", "{}"))
+    raw_event = os.environ.get(
+        "SPAWN_EVENT_JSON", os.environ.get("WATCH_EVENT_JSON", "{}")
+    )
     topic = os.environ.get("SPAWN_EVENT_TYPE", os.environ.get("WATCH_EVENT_TOPIC", ""))
     profile = os.environ.get("SPAWN_PROFILE", os.environ.get("WATCH_PROFILE", ""))
     try:
@@ -52,7 +54,10 @@ def main() -> int:
     )
     with out_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(row, sort_keys=True) + "\n")
-    logger.info("alert row appended", extra={"out_path": str(out_path), "topic": topic or "unknown"})
+    logger.info(
+        "alert row appended",
+        extra={"out_path": str(out_path), "topic": topic or "unknown"},
+    )
     return 0
 
 

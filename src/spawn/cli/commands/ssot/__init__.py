@@ -1,2 +1,1 @@
 """SSOT commands."""
-

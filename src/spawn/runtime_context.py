@@ -60,10 +60,16 @@ def load_runtime_context() -> RuntimeContext:
 
     dotfiles_source_dir = current_home / "src" / "dotfiles"
     base_data = _extract_dotfiles_block(dotfiles_source_dir / ".chezmoidata.yaml")
-    local_data = _extract_dotfiles_block(dotfiles_source_dir / ".chezmoidata" / "99-local-overrides.yaml")
+    local_data = _extract_dotfiles_block(
+        dotfiles_source_dir / ".chezmoidata" / "99-local-overrides.yaml"
+    )
 
-    data_user = (local_data.get("userOverride", "") or base_data.get("userOverride", "")).strip()
-    data_host = (local_data.get("hostOverride", "") or base_data.get("hostOverride", "")).strip()
+    data_user = (
+        local_data.get("userOverride", "") or base_data.get("userOverride", "")
+    ).strip()
+    data_host = (
+        local_data.get("hostOverride", "") or base_data.get("hostOverride", "")
+    ).strip()
 
     effective_user = env_user or data_user or current_user
     effective_host = env_host or data_host or current_host
@@ -75,6 +81,14 @@ def load_runtime_context() -> RuntimeContext:
         dotfiles_source_dir=Path("/home") / effective_user / "src" / "dotfiles",
         codex_home=Path("/home") / effective_user / ".config" / "codex",
         codex_state=Path("/home") / effective_user / ".local" / "state" / "codex",
-        codex_config_path=Path("/home") / effective_user / ".config" / "codex" / "config.toml",
-        codex_sessions_root=Path("/home") / effective_user / ".config" / "codex" / "sessions",
+        codex_config_path=Path("/home")
+        / effective_user
+        / ".config"
+        / "codex"
+        / "config.toml",
+        codex_sessions_root=Path("/home")
+        / effective_user
+        / ".config"
+        / "codex"
+        / "sessions",
     )

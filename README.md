@@ -91,6 +91,19 @@ Proto contract:
 - verify generated docs are committed:
   - `./scripts/check_docs.sh`
 
+## Pre-commit pipeline (high-signal)
+- install hooks:
+  - `uv sync --group dev`
+  - `uv run pre-commit install`
+  - `uv run pre-commit install --hook-type pre-push`
+- run on demand:
+  - `uv run pre-commit run --all-files`
+- run type-checks:
+  - `uv run --group dev mypy`
+- check/fix module docstrings:
+  - `uv run python scripts/docstrings_sync.py`
+  - `uv run python scripts/docstrings_sync.py --fix`
+
 ## Validation and replay tests
 - golden replay determinism:
   - `uv run python tests/golden_memory_replay.py`

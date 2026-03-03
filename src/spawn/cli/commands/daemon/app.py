@@ -4,14 +4,16 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any, cast
 
 import typer
 
 from spawn.adapters.grpc_server import serve
 from spawn.cli.shared import channel_and_stub, console, socket_path
 from spawn.core.service import default_config_path, write_default_config
-from spawn.v1 import spawn_control_pb2 as pb2
+from spawn.v1 import spawn_control_pb2 as _pb2
 
+pb2: Any = cast(Any, _pb2)
 app = typer.Typer(help="Daemon control helpers")
 
 
@@ -47,7 +49,9 @@ def health(
 
 @app.command("write-config")
 def write_config(
-    path: str = typer.Option(str(default_config_path()), "--path", help="Config path to write"),
+    path: str = typer.Option(
+        str(default_config_path()), "--path", help="Config path to write"
+    ),
     force: bool = typer.Option(False, "--force", help="Overwrite existing config"),
 ) -> None:
     write_default_config(Path(path).expanduser(), force=force)

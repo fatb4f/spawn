@@ -16,7 +16,9 @@ EXPECTED_DIR = FIXTURE_DIR / "expected"
 
 
 def run(cmd: list[str], *, env: dict[str, str]) -> None:
-    cp = subprocess.run(cmd, cwd=ROOT, env=env, text=True, capture_output=True, check=False)
+    cp = subprocess.run(
+        cmd, cwd=ROOT, env=env, text=True, capture_output=True, check=False
+    )
     if cp.returncode != 0:
         raise SystemExit(
             f"command failed ({cp.returncode}): {' '.join(cmd)}\nstdout:\n{cp.stdout}\nstderr:\n{cp.stderr}"
@@ -38,7 +40,9 @@ def main() -> int:
         memory_root = state_root / "memory"
         memory_root.mkdir(parents=True, exist_ok=True)
         (cache_root / "memory").mkdir(parents=True, exist_ok=True)
-        shutil.copy2(FIXTURE_DIR / "memory.events.jsonl", memory_root / "memory.events.jsonl")
+        shutil.copy2(
+            FIXTURE_DIR / "memory.events.jsonl", memory_root / "memory.events.jsonl"
+        )
 
         env = os.environ.copy()
         env["STATE_DIRECTORY"] = str(state_root)
@@ -73,10 +77,20 @@ def main() -> int:
             env=env,
         )
 
-        compare_bytes(memory_root / "memory.accepted.json", EXPECTED_DIR / "memory.accepted.json")
-        compare_bytes(memory_root / "memory.proposals.json", EXPECTED_DIR / "memory.proposals.json")
-        compare_bytes(memory_root / "memory.prompt.txt", EXPECTED_DIR / "memory.prompt.txt")
-        compare_bytes(cache_root / "memory" / "memory.prompt.txt", EXPECTED_DIR / "memory.prompt.cache.txt")
+        compare_bytes(
+            memory_root / "memory.accepted.json", EXPECTED_DIR / "memory.accepted.json"
+        )
+        compare_bytes(
+            memory_root / "memory.proposals.json",
+            EXPECTED_DIR / "memory.proposals.json",
+        )
+        compare_bytes(
+            memory_root / "memory.prompt.txt", EXPECTED_DIR / "memory.prompt.txt"
+        )
+        compare_bytes(
+            cache_root / "memory" / "memory.prompt.txt",
+            EXPECTED_DIR / "memory.prompt.cache.txt",
+        )
 
     print("golden-memory-replay: ok")
     return 0

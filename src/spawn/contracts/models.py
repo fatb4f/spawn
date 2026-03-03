@@ -20,6 +20,19 @@ EVENT_TYPES = (
     "spawn.alert.raised",
 )
 
+EventType = Literal[
+    "codex.session.started",
+    "codex.session.updated",
+    "codex.session.ended",
+    "codex.session.stalled",
+    "codex.config.changed",
+    "codex.session.meta.refresh.failed",
+    "codex.session.meta.prompt.changed",
+    "codex.session.resume.failed",
+    "codex.session.service.restarted",
+    "spawn.alert.raised",
+]
+
 
 class ContractModel(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
@@ -32,7 +45,7 @@ class EventEnvelopeV1(ContractModel):
         serialization_alias="schema",
     )
     event_id: str
-    event_type: Literal[*EVENT_TYPES]
+    event_type: EventType
     source: str
     observed_at: str
     dedupe_key: str

@@ -1,0 +1,66 @@
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+
+  - repo: local
+    hooks:
+      - id: ruff-format
+        name: ruff-format
+        entry: uv run ruff format
+        language: system
+        files: ^(src|tests|scripts)/.*\.py$
+      - id: ruff-check
+        name: ruff-check
+        entry: uv run ruff check --fix
+        language: system
+        files: ^(src|tests|scripts)/.*\.py$
+      - id: py-compileall
+        name: py-compileall
+        entry: uv run python -m compileall src
+        language: system
+        pass_filenames: false
+      - id: docstrings-sync
+        name: docstrings-sync
+        entry: uv run python scripts/docstrings_sync.py
+        language: system
+        pass_filenames: false
+      - id: mypy
+        name: mypy
+        entry: uv run --group dev mypy
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: check-gen
+        name: check-gen
+        entry: ./scripts/check_gen.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: check-docs
+        name: check-docs
+        entry: ./scripts/check_docs.sh
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: ssot-validate-tree
+        name: ssot-validate-tree
+        entry: uv run spawnctl ssot validate-tree
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+      - id: golden-memory-replay
+        name: golden-memory-replay
+        entry: uv run python tests/golden_memory_replay.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]

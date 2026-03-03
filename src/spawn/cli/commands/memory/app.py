@@ -16,7 +16,9 @@ app = typer.Typer(help="Memory ingestion and review commands")
 
 @app.command("ingest")
 def ingest(
-    sessions_root: str = typer.Option("", "--sessions-root", help="Codex sessions root"),
+    sessions_root: str = typer.Option(
+        "", "--sessions-root", help="Codex sessions root"
+    ),
     request_id: str = typer.Option("", "--request-id"),
 ) -> None:
     root = Path(sessions_root).expanduser() if sessions_root else None
@@ -81,4 +83,3 @@ def rebuild() -> None:
             sort_keys=True,
         )
     )
-

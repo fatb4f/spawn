@@ -28,8 +28,7 @@ def main() -> int:
         raise SystemExit("no schemas found; run scripts/export_schemas.py first")
 
     components = {
-        schema_name(path): {"$ref": f"./schemas/{path.name}"}
-        for path in schema_files
+        schema_name(path): {"$ref": f"./schemas/{path.name}"} for path in schema_files
     }
 
     doc = {

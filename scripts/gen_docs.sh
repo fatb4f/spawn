@@ -18,4 +18,3 @@ npx -y @redocly/cli@latest bundle \
 PYTHONPATH=src uv run python scripts/gen_docs.py
 
 echo "gen-docs: ok"
-

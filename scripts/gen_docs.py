@@ -34,13 +34,16 @@ def render_openapi_components(bundle: dict) -> str:
             continue
         schema = schemas[name] if isinstance(schemas[name], dict) else {}
         type_ = schema.get("type", "-")
-        description = str(schema.get("description", "-")).replace("\n", " ").strip() or "-"
+        description = (
+            str(schema.get("description", "-")).replace("\n", " ").strip() or "-"
+        )
         lines.append(f"| `{name}` | `{type_}` | {description} |")
     lines.append("")
     return "\n".join(lines)
 
 
 def render_ssot_registry(index: dict) -> str:
+    schema_dir = SCHEMA_INDEX_JSON.parent
     lines = [
         "# SSOT Schema Registry",
         "",
@@ -49,15 +52,32 @@ def render_ssot_registry(index: dict) -> str:
         "",
         "## Schemas",
         "",
-        "| Name | Version | Canonical | File |",
-        "| --- | --- | --- | --- |",
+        "| Name | Version | Canonical | Title | Description | File |",
+        "| --- | --- | --- | --- | --- | --- |",
     ]
     for item in index.get("schemas", []):
         name = item.get("name", "")
         version = item.get("version", "")
         canonical = "yes" if item.get("canonical") else "no"
         file = item.get("file", "")
-        lines.append(f"| `{name}` | `{version}` | {canonical} | `{file}` |")
+        title = "-"
+        description = "-"
+        schema_path = schema_dir / file
+        if schema_path.exists():
+            try:
+                schema_doc = json.loads(schema_path.read_text(encoding="utf-8"))
+                title = (
+                    str(schema_doc.get("title", "-")).replace("\n", " ").strip() or "-"
+                )
+                description = (
+                    str(schema_doc.get("description", "-")).replace("\n", " ").strip()
+                    or "-"
+                )
+            except Exception:
+                pass
+        lines.append(
+            f"| `{name}` | `{version}` | {canonical} | {title} | {description} | `{file}` |"
+        )
     lines.append("")
     return "\n".join(lines)
 
