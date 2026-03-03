@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 import time
 import uuid
@@ -12,6 +13,8 @@ from spawn.contracts.task_results import make_task_result
 from spawn.contracts.envelopes import utc_now
 from spawn.core import service as spawnd
 from spawn.ssot.validate import validate_or_raise
+
+logger = logging.getLogger(__name__)
 
 
 def default_log_path() -> Path:
@@ -109,6 +112,7 @@ def dispatch_refresh(request_id: str | None, event_id: str | None, refresh_comma
         refresh_command=refresh_command,
         log_path=log_path,
     )
+    logger.debug("refresh dispatched", extra={"request_id": rid, "event_id": eid, "rc": rc})
     return rc, out, err, rid
 
 

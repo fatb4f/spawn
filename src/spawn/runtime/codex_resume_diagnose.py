@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 from spawn.contracts.envelopes import utc_now
+from spawn.logging_utils import configure_logging
+
+logger = logging.getLogger(__name__)
 
 
 def latest_session_file(sessions_root: Path) -> str | None:
@@ -21,6 +25,7 @@ def latest_session_file(sessions_root: Path) -> str | None:
 
 
 def main() -> int:
+    configure_logging(app_name="spawn.codex_resume_diagnose", default_format="json")
     codex_state = Path(os.environ.get("CODEX_STATE", "~/.local/state/codex")).expanduser()
     sessions_root = Path(os.environ.get("CODEX_SESSIONS_ROOT", "~/.config/codex/sessions")).expanduser()
     out = codex_state / "meta" / "resume_diagnose.json"
@@ -41,6 +46,7 @@ def main() -> int:
         "event": event,
     }
     out.write_text(json.dumps(payload, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    logger.info("resume diagnose written", extra={"out_path": str(out)})
     print(str(out))
     return 0
 

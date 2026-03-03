@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from concurrent import futures
 from pathlib import Path
@@ -12,6 +13,8 @@ import grpc
 from spawn.runtime import codex_session_ops
 from spawn.v1 import spawn_control_pb2 as pb2
 from spawn.v1 import spawn_control_pb2_grpc as pb2_grpc
+
+logger = logging.getLogger(__name__)
 
 
 def default_socket_path() -> Path:
@@ -78,6 +81,7 @@ def serve(socket_path: Path) -> int:
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=8))
     pb2_grpc.add_SpawnControlServicer_to_server(SpawnControlService(), server)
     server.add_insecure_port(grpc_target_from_path(socket_path))
+    logger.info("grpc server listening", extra={"socket_path": str(socket_path)})
     server.start()
     server.wait_for_termination()
     return 0

@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from dataclasses import asdict, dataclass
 import json
+import logging
 import os
 import shlex
 import subprocess
@@ -16,6 +17,7 @@ from typing import Any
 
 from spawn.contracts.envelopes import make_action_request, parse_event_envelope, utc_now
 from spawn.contracts.task_results import make_task_result
+from spawn.logging_utils import configure_logging
 from spawn.ssot.validate import validate_or_raise
 
 try:
@@ -34,6 +36,9 @@ try:
     from xdg_base_dirs import xdg_cache_home, xdg_config_home, xdg_state_home
 except ImportError:  # pragma: no cover - optional dependency
     xdg_cache_home = xdg_config_home = xdg_state_home = None
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -253,6 +258,7 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
     config_path = Path(args.config).expanduser()
     if args.write_config:
         write_default_config(config_path, force=args.force)
+        logger.info("default config written", extra={"path": str(config_path)})
         print(config_path)
         return 0
 
@@ -278,6 +284,14 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
         topics = {str(item).strip() for item in raw_topics if str(item).strip()}
     log_path = Path(args.log_path or str(section.get("log_path"))).expanduser()
     execution_mode = (args.execution_mode or str(section.get("execution_mode", "transient"))).strip().lower()
+    logger.info(
+        "starting codex session refresh loop",
+        extra={
+            "config_path": str(config_path),
+            "execution_mode": execution_mode,
+            "topics_count": len(topics),
+        },
+    )
 
     xdg_path("XDG_CACHE_HOME", "~/.cache").joinpath("spawn").mkdir(parents=True, exist_ok=True)
     xdg_path("XDG_STATE_HOME", "~/.local/state").joinpath("spawn").mkdir(parents=True, exist_ok=True)
@@ -394,6 +408,14 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
                     reason_code="DETERMINISTIC.OK" if rc == 0 else "INFRA.DISPATCH_FAILED",
                 ),
             )
+            logger.debug(
+                "dispatched transient refresh",
+                extra={
+                    "request_id": request["request_id"],
+                    "event_id": request["event_id"],
+                    "rc": rc,
+                },
+            )
             continue
 
         started = utc_now()
@@ -413,6 +435,14 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
                 reason_code="DETERMINISTIC.OK" if rc == 0 else "TRANSIENT.CMD_FAILED",
             ),
         )
+        logger.debug(
+            "executed in-process refresh",
+            extra={
+                "request_id": request["request_id"],
+                "event_id": request["event_id"],
+                "rc": rc,
+            },
+        )
     return 0
 
 
@@ -420,6 +450,7 @@ def cmd_api_serve(args: argparse.Namespace) -> int:
     from spawn.adapters.grpc_server import serve
 
     socket_path = Path(args.socket_path).expanduser()
+    logger.info("starting grpc api", extra={"socket_path": str(socket_path)})
     return serve(socket_path)
 
 
@@ -458,6 +489,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    configure_logging(app_name="spawnd", default_format="json")
     args = build_parser().parse_args()
     return args.func(args)
 

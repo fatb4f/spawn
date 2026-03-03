@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import tempfile
 import time
@@ -20,6 +21,9 @@ try:
 except ImportError:  # pragma: no cover
     xdg_cache_home = None
     xdg_state_home = None
+
+
+logger = logging.getLogger(__name__)
 
 
 def _xdg_state_home() -> Path:
@@ -448,12 +452,14 @@ def ingest_sessions(session_root: Path | None = None, request_id: str | None = N
 
         _save_cursor(cursor)
         _rebuild_memory_unlocked()
-        return {
+        summary = {
             "processed_lines": processed,
             "events_written": events_written,
             "accepted": accepted,
             "proposals": proposals,
         }
+        logger.info("memory ingest complete", extra=summary)
+        return summary
 
 
 def build_memory_state() -> dict[str, Any]:
@@ -532,7 +538,16 @@ def _rebuild_memory_unlocked() -> dict[str, Any]:
 
 def rebuild_memory() -> dict[str, Any]:
     with _memory_lock():
-        return _rebuild_memory_unlocked()
+        state = _rebuild_memory_unlocked()
+        logger.info(
+            "memory rebuild complete",
+            extra={
+                "accepted": len(state.get("memory", [])),
+                "proposals": len(state.get("proposals", [])),
+                "tombstones": len(state.get("tombstones", [])),
+            },
+        )
+        return state
 
 
 def list_memory() -> list[dict[str, Any]]:
@@ -597,6 +612,7 @@ def accept_proposal(proposal_id_value: str, request_id: str | None = None) -> bo
             payload={"kind": "memory_proposal.accepted", "proposal_id": proposal_id_value},
         )
         _rebuild_memory_unlocked()
+        logger.info("proposal accepted", extra={"proposal_id": proposal_id_value, "request_id": rid})
         return True
 
 
@@ -614,6 +630,7 @@ def reject_proposal(proposal_id_value: str, request_id: str | None = None) -> bo
             payload={"kind": "memory_proposal.rejected", "proposal_id": proposal_id_value},
         )
         _rebuild_memory_unlocked()
+        logger.info("proposal rejected", extra={"proposal_id": proposal_id_value, "request_id": rid})
         return True
 
 
@@ -631,4 +648,5 @@ def deprecate_memory(memory_id_value: str, request_id: str | None = None) -> boo
             payload={"kind": "memory_patch", "upserts": [], "deprecations": [memory_id_value]},
         )
         _rebuild_memory_unlocked()
+        logger.info("memory deprecated", extra={"memory_id": memory_id_value, "request_id": rid})
         return True

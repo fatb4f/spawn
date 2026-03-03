@@ -21,6 +21,11 @@ jobs:
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
       - name: Sync dependencies
         run: uv sync --frozen
 
@@ -29,6 +34,9 @@ jobs:
 
       - name: Check generated artifacts
         run: ./scripts/check_gen.sh
+
+      - name: Check generated docs
+        run: ./scripts/check_docs.sh
 
       - name: Validate schema tree
         run: uv run spawnctl ssot validate-tree

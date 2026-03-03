@@ -1,0 +1,1081 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "spawn control and event contracts",
+    "version": "0.1.0",
+    "description": "Derived OpenAPI component catalog for spawn contracts."
+  },
+  "servers": [],
+  "paths": {},
+  "components": {
+    "schemas": {
+      "ActionRequestV1": {
+        "$defs": {
+          "ActionPolicyV1": {
+            "properties": {
+              "execution_class": {
+                "default": "transient",
+                "title": "Execution Class",
+                "type": "string"
+              },
+              "retry": {
+                "default": "none",
+                "title": "Retry",
+                "type": "string"
+              },
+              "timeout_sec": {
+                "default": 30,
+                "title": "Timeout Sec",
+                "type": "integer"
+              }
+            },
+            "title": "ActionPolicyV1",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Args",
+            "type": "array"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "policy": {
+            "properties": {
+              "execution_class": {
+                "default": "transient",
+                "title": "Execution Class",
+                "type": "string"
+              },
+              "retry": {
+                "default": "none",
+                "title": "Retry",
+                "type": "string"
+              },
+              "timeout_sec": {
+                "default": 30,
+                "title": "Timeout Sec",
+                "type": "integer"
+              }
+            },
+            "title": "ActionPolicyV1",
+            "type": "object"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "schema": {
+            "const": "action_request_v1",
+            "default": "action_request_v1",
+            "title": "Schema",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "event_id",
+          "action",
+          "policy"
+        ],
+        "title": "ActionRequestV1",
+        "type": "object"
+      },
+      "ActionResultV1": {
+        "$defs": {
+          "ActionArtifactsV1": {
+            "properties": {
+              "stderr": {
+                "default": "",
+                "title": "Stderr",
+                "type": "string"
+              },
+              "stdout": {
+                "default": "",
+                "title": "Stdout",
+                "type": "string"
+              }
+            },
+            "title": "ActionArtifactsV1",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "artifacts": {
+            "properties": {
+              "stderr": {
+                "default": "",
+                "title": "Stderr",
+                "type": "string"
+              },
+              "stdout": {
+                "default": "",
+                "title": "Stdout",
+                "type": "string"
+              }
+            },
+            "title": "ActionArtifactsV1",
+            "type": "object"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "finished_at": {
+            "title": "Finished At",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "return_code": {
+            "title": "Return Code",
+            "type": "integer"
+          },
+          "schema": {
+            "const": "action_result_v1",
+            "default": "action_result_v1",
+            "title": "Schema",
+            "type": "string"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "event_id",
+          "action",
+          "status",
+          "return_code",
+          "started_at",
+          "finished_at",
+          "artifacts"
+        ],
+        "title": "ActionResultV1",
+        "type": "object"
+      },
+      "EventEnvelopeV1": {
+        "properties": {
+          "dedupe_key": {
+            "title": "Dedupe Key",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "enum": [
+              "codex.session.started",
+              "codex.session.updated",
+              "codex.session.ended",
+              "codex.session.stalled",
+              "codex.config.changed",
+              "codex.session.meta.refresh.failed",
+              "codex.session.meta.prompt.changed",
+              "codex.session.resume.failed",
+              "codex.session.service.restarted",
+              "spawn.alert.raised"
+            ],
+            "title": "Event Type",
+            "type": "string"
+          },
+          "observed_at": {
+            "title": "Observed At",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "schema": {
+            "const": "event_envelope_v1",
+            "default": "event_envelope_v1",
+            "title": "Schema",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_type",
+          "source",
+          "observed_at",
+          "dedupe_key"
+        ],
+        "title": "EventEnvelopeV1",
+        "type": "object"
+      },
+      "ToolSsotV1": {
+        "$defs": {
+          "ComponentSpec": {
+            "properties": {
+              "entrypoint": {
+                "default": "",
+                "title": "Entrypoint",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "role": {
+                "enum": [
+                  "daemon",
+                  "cli",
+                  "adapter",
+                  "core",
+                  "schema",
+                  "generated"
+                ],
+                "title": "Role",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "role"
+            ],
+            "title": "ComponentSpec",
+            "type": "object"
+          },
+          "ContractSpec": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "proto",
+                  "openapi",
+                  "json_schema",
+                  "pydantic_model"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "lifecycle": {
+                "default": "canonical",
+                "enum": [
+                  "canonical",
+                  "derived"
+                ],
+                "title": "Lifecycle",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "path": {
+                "title": "Path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "path",
+              "kind"
+            ],
+            "title": "ContractSpec",
+            "type": "object"
+          },
+          "DependencySpec": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "runtime",
+                  "build",
+                  "dev"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "note": {
+                "default": "",
+                "title": "Note",
+                "type": "string"
+              },
+              "required": {
+                "default": true,
+                "title": "Required",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "kind"
+            ],
+            "title": "DependencySpec",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "components": {
+            "items": {
+              "properties": {
+                "entrypoint": {
+                  "default": "",
+                  "title": "Entrypoint",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "daemon",
+                    "cli",
+                    "adapter",
+                    "core",
+                    "schema",
+                    "generated"
+                  ],
+                  "title": "Role",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "role"
+              ],
+              "title": "ComponentSpec",
+              "type": "object"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "contracts": {
+            "items": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "proto",
+                    "openapi",
+                    "json_schema",
+                    "pydantic_model"
+                  ],
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "lifecycle": {
+                  "default": "canonical",
+                  "enum": [
+                    "canonical",
+                    "derived"
+                  ],
+                  "title": "Lifecycle",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "path": {
+                  "title": "Path",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "path",
+                "kind"
+              ],
+              "title": "ContractSpec",
+              "type": "object"
+            },
+            "title": "Contracts",
+            "type": "array"
+          },
+          "dependencies": {
+            "items": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "runtime",
+                    "build",
+                    "dev"
+                  ],
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "note": {
+                  "default": "",
+                  "title": "Note",
+                  "type": "string"
+                },
+                "required": {
+                  "default": true,
+                  "title": "Required",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "kind"
+              ],
+              "title": "DependencySpec",
+              "type": "object"
+            },
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "schema": {
+            "const": "tool_ssot_v1",
+            "default": "tool_ssot_v1",
+            "title": "Schema",
+            "type": "string"
+          },
+          "tool": {
+            "const": "spawn",
+            "default": "spawn",
+            "title": "Tool",
+            "type": "string"
+          },
+          "version": {
+            "default": "0.1.0",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "title": "ToolSsotV1",
+        "type": "object"
+      },
+      "ActionPolicyV1": {
+        "properties": {
+          "execution_class": {
+            "default": "transient",
+            "title": "Execution Class",
+            "type": "string"
+          },
+          "retry": {
+            "default": "none",
+            "title": "Retry",
+            "type": "string"
+          },
+          "timeout_sec": {
+            "default": 30,
+            "title": "Timeout Sec",
+            "type": "integer"
+          }
+        },
+        "title": "ActionPolicyV1",
+        "type": "object"
+      },
+      "ActionRequestV1.schema": {
+        "$defs": {
+          "ActionPolicyV1": {
+            "properties": {
+              "execution_class": {
+                "default": "transient",
+                "title": "Execution Class",
+                "type": "string"
+              },
+              "retry": {
+                "default": "none",
+                "title": "Retry",
+                "type": "string"
+              },
+              "timeout_sec": {
+                "default": 30,
+                "title": "Timeout Sec",
+                "type": "integer"
+              }
+            },
+            "title": "ActionPolicyV1",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "args": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Args",
+            "type": "array"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "policy": {
+            "properties": {
+              "execution_class": {
+                "default": "transient",
+                "title": "Execution Class",
+                "type": "string"
+              },
+              "retry": {
+                "default": "none",
+                "title": "Retry",
+                "type": "string"
+              },
+              "timeout_sec": {
+                "default": 30,
+                "title": "Timeout Sec",
+                "type": "integer"
+              }
+            },
+            "title": "ActionPolicyV1",
+            "type": "object"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "schema": {
+            "const": "action_request_v1",
+            "default": "action_request_v1",
+            "title": "Schema",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "event_id",
+          "action",
+          "policy"
+        ],
+        "title": "ActionRequestV1",
+        "type": "object"
+      },
+      "ActionArtifactsV1": {
+        "properties": {
+          "stderr": {
+            "default": "",
+            "title": "Stderr",
+            "type": "string"
+          },
+          "stdout": {
+            "default": "",
+            "title": "Stdout",
+            "type": "string"
+          }
+        },
+        "title": "ActionArtifactsV1",
+        "type": "object"
+      },
+      "ActionResultV1.schema": {
+        "$defs": {
+          "ActionArtifactsV1": {
+            "properties": {
+              "stderr": {
+                "default": "",
+                "title": "Stderr",
+                "type": "string"
+              },
+              "stdout": {
+                "default": "",
+                "title": "Stdout",
+                "type": "string"
+              }
+            },
+            "title": "ActionArtifactsV1",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "action": {
+            "title": "Action",
+            "type": "string"
+          },
+          "artifacts": {
+            "properties": {
+              "stderr": {
+                "default": "",
+                "title": "Stderr",
+                "type": "string"
+              },
+              "stdout": {
+                "default": "",
+                "title": "Stdout",
+                "type": "string"
+              }
+            },
+            "title": "ActionArtifactsV1",
+            "type": "object"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "finished_at": {
+            "title": "Finished At",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "return_code": {
+            "title": "Return Code",
+            "type": "integer"
+          },
+          "schema": {
+            "const": "action_result_v1",
+            "default": "action_result_v1",
+            "title": "Schema",
+            "type": "string"
+          },
+          "started_at": {
+            "title": "Started At",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "event_id",
+          "action",
+          "status",
+          "return_code",
+          "started_at",
+          "finished_at",
+          "artifacts"
+        ],
+        "title": "ActionResultV1",
+        "type": "object"
+      },
+      "EventEnvelopeV1.schema": {
+        "properties": {
+          "dedupe_key": {
+            "title": "Dedupe Key",
+            "type": "string"
+          },
+          "event_id": {
+            "title": "Event Id",
+            "type": "string"
+          },
+          "event_type": {
+            "enum": [
+              "codex.session.started",
+              "codex.session.updated",
+              "codex.session.ended",
+              "codex.session.stalled",
+              "codex.config.changed",
+              "codex.session.meta.refresh.failed",
+              "codex.session.meta.prompt.changed",
+              "codex.session.resume.failed",
+              "codex.session.service.restarted",
+              "spawn.alert.raised"
+            ],
+            "title": "Event Type",
+            "type": "string"
+          },
+          "observed_at": {
+            "title": "Observed At",
+            "type": "string"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "schema": {
+            "const": "event_envelope_v1",
+            "default": "event_envelope_v1",
+            "title": "Schema",
+            "type": "string"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "event_type",
+          "source",
+          "observed_at",
+          "dedupe_key"
+        ],
+        "title": "EventEnvelopeV1",
+        "type": "object"
+      },
+      "ComponentSpec": {
+        "properties": {
+          "entrypoint": {
+            "default": "",
+            "title": "Entrypoint",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "daemon",
+              "cli",
+              "adapter",
+              "core",
+              "schema",
+              "generated"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "role"
+        ],
+        "title": "ComponentSpec",
+        "type": "object"
+      },
+      "ContractSpec": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "proto",
+              "openapi",
+              "json_schema",
+              "pydantic_model"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "lifecycle": {
+            "default": "canonical",
+            "enum": [
+              "canonical",
+              "derived"
+            ],
+            "title": "Lifecycle",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "kind"
+        ],
+        "title": "ContractSpec",
+        "type": "object"
+      },
+      "DependencySpec": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "runtime",
+              "build",
+              "dev"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "default": "",
+            "title": "Note",
+            "type": "string"
+          },
+          "required": {
+            "default": true,
+            "title": "Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "kind"
+        ],
+        "title": "DependencySpec",
+        "type": "object"
+      },
+      "ToolSsotV1.schema": {
+        "$defs": {
+          "ComponentSpec": {
+            "properties": {
+              "entrypoint": {
+                "default": "",
+                "title": "Entrypoint",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "role": {
+                "enum": [
+                  "daemon",
+                  "cli",
+                  "adapter",
+                  "core",
+                  "schema",
+                  "generated"
+                ],
+                "title": "Role",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "role"
+            ],
+            "title": "ComponentSpec",
+            "type": "object"
+          },
+          "ContractSpec": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "proto",
+                  "openapi",
+                  "json_schema",
+                  "pydantic_model"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "lifecycle": {
+                "default": "canonical",
+                "enum": [
+                  "canonical",
+                  "derived"
+                ],
+                "title": "Lifecycle",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "path": {
+                "title": "Path",
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "path",
+              "kind"
+            ],
+            "title": "ContractSpec",
+            "type": "object"
+          },
+          "DependencySpec": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "runtime",
+                  "build",
+                  "dev"
+                ],
+                "title": "Kind",
+                "type": "string"
+              },
+              "name": {
+                "title": "Name",
+                "type": "string"
+              },
+              "note": {
+                "default": "",
+                "title": "Note",
+                "type": "string"
+              },
+              "required": {
+                "default": true,
+                "title": "Required",
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "name",
+              "kind"
+            ],
+            "title": "DependencySpec",
+            "type": "object"
+          }
+        },
+        "properties": {
+          "components": {
+            "items": {
+              "properties": {
+                "entrypoint": {
+                  "default": "",
+                  "title": "Entrypoint",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "role": {
+                  "enum": [
+                    "daemon",
+                    "cli",
+                    "adapter",
+                    "core",
+                    "schema",
+                    "generated"
+                  ],
+                  "title": "Role",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "role"
+              ],
+              "title": "ComponentSpec",
+              "type": "object"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "contracts": {
+            "items": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "proto",
+                    "openapi",
+                    "json_schema",
+                    "pydantic_model"
+                  ],
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "lifecycle": {
+                  "default": "canonical",
+                  "enum": [
+                    "canonical",
+                    "derived"
+                  ],
+                  "title": "Lifecycle",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "path": {
+                  "title": "Path",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "path",
+                "kind"
+              ],
+              "title": "ContractSpec",
+              "type": "object"
+            },
+            "title": "Contracts",
+            "type": "array"
+          },
+          "dependencies": {
+            "items": {
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "runtime",
+                    "build",
+                    "dev"
+                  ],
+                  "title": "Kind",
+                  "type": "string"
+                },
+                "name": {
+                  "title": "Name",
+                  "type": "string"
+                },
+                "note": {
+                  "default": "",
+                  "title": "Note",
+                  "type": "string"
+                },
+                "required": {
+                  "default": true,
+                  "title": "Required",
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "name",
+                "kind"
+              ],
+              "title": "DependencySpec",
+              "type": "object"
+            },
+            "title": "Dependencies",
+            "type": "array"
+          },
+          "schema": {
+            "const": "tool_ssot_v1",
+            "default": "tool_ssot_v1",
+            "title": "Schema",
+            "type": "string"
+          },
+          "tool": {
+            "const": "spawn",
+            "default": "spawn",
+            "title": "Tool",
+            "type": "string"
+          },
+          "version": {
+            "default": "0.1.0",
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "title": "ToolSsotV1",
+        "type": "object"
+      }
+    }
+  },
+  "x-derived-from": [
+    "src/spawn/contracts/models.py",
+    "api/proto/spawn/v1/spawn_control.proto"
+  ]
+}

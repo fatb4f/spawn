@@ -86,6 +86,10 @@ Proto contract:
   - `./scripts/gen.sh`
 - verify generated artifacts are committed:
   - `./scripts/check_gen.sh`
+- generate API + schema docs from specs:
+  - `./scripts/gen_docs.sh`
+- verify generated docs are committed:
+  - `./scripts/check_docs.sh`
 
 ## Validation and replay tests
 - golden replay determinism:
@@ -122,3 +126,5 @@ This repo follows `fabric-docs/docs/FABRIC_MUST_RULES.md` and `fabric-docs/docs/
 
 ## Documentation
 Shared standards and architecture live in `fabric-docs`.
+
+Generated API docs live under `docs/api/`.

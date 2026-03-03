@@ -3,19 +3,23 @@
 from __future__ import annotations
 
 import argparse
-import sys
+import logging
 import tomllib
 from pathlib import Path
 
+from spawn.logging_utils import configure_logging
 from spawn.runtime_context import load_runtime_context
+
+logger = logging.getLogger(__name__)
 
 
 def fail(msg: str) -> int:
-    print(msg, file=sys.stderr)
+    logger.error(msg)
     return 1
 
 
 def main() -> int:
+    configure_logging(app_name="spawn.codex_config_validate", default_format="json")
     ctx = load_runtime_context()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", default=str(ctx.codex_config_path))
@@ -57,6 +61,7 @@ def main() -> int:
     except Exception as exc:  # pragma: no cover
         return fail(f"log path not writable: {logs_dir} ({exc})")
 
+    logger.info("codex config validate ok", extra={"config_path": str(cfg_path)})
     print("codex-config-validate: ok")
     return 0
 

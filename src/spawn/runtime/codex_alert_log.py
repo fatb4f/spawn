@@ -4,14 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import logging
 import os
 from pathlib import Path
 from typing import Any
 
 from spawn.contracts.envelopes import make_event_envelope
+from spawn.logging_utils import configure_logging
+
+logger = logging.getLogger(__name__)
 
 
 def main() -> int:
+    configure_logging(app_name="spawn.codex_alert_log", default_format="json")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--severity", default="info")
     parser.add_argument("--reason", default="")
@@ -47,6 +52,7 @@ def main() -> int:
     )
     with out_path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(row, sort_keys=True) + "\n")
+    logger.info("alert row appended", extra={"out_path": str(out_path), "topic": topic or "unknown"})
     return 0
 
 

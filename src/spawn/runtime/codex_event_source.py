@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import subprocess
 import time
@@ -13,6 +14,10 @@ from typing import Any
 
 from spawn.contracts.envelopes import make_event_envelope, utc_now
 from spawn.contracts.namespaces import CODEX, event_type
+from spawn.logging_utils import configure_logging
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,6 +51,7 @@ def emit(topic: str, payload: dict[str, Any]) -> None:
         dedupe_key=f"{topic}:{dedupe_value}",
     )
     print(json.dumps(event, sort_keys=True), flush=True)
+    logger.debug("event emitted", extra={"topic": topic, "dedupe_key": event["dedupe_key"]})
 
 
 def file_hash(path: Path) -> str | None:
@@ -111,6 +117,7 @@ def read_user_service_restarts(service_name: str) -> int | None:
 
 
 def main() -> int:
+    configure_logging(app_name="spawn.codex_event_source", default_format="json")
     sessions_root = Path(os.environ.get("CODEX_SESSIONS_ROOT", "~/.config/codex/sessions")).expanduser()
     codex_state = Path(os.environ.get("CODEX_STATE", "~/.local/state/codex")).expanduser()
     refresh_log = codex_state / "meta" / "refresh.log"
@@ -138,6 +145,10 @@ def main() -> int:
         config_hash=None,
         service_restarts={},
         last_service_poll=0.0,
+    )
+    logger.info(
+        "starting codex event source",
+        extra={"sessions_root": str(sessions_root), "poll_seconds": poll_seconds},
     )
 
     while True:
