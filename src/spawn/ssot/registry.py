@@ -7,8 +7,9 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import urldefrag
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, SchemaError
 from referencing import Registry, Resource
 
 
@@ -28,6 +29,7 @@ class SchemaRegistry:
         self.index_path = self.root / "schema.index.json"
         self._schemas: dict[str, dict[str, Any]] = {}
         self._descriptors: dict[str, SchemaDescriptor] = {}
+        self._resource_docs: dict[str, dict[str, Any]] = {}
         self._registry = Registry()
         self._load()
 
@@ -72,6 +74,9 @@ class SchemaRegistry:
             registry = registry.with_resource(uri, resource)
             registry = registry.with_resource(file_name, resource)
             registry = registry.with_resource(f"./{file_name}", resource)
+            self._resource_docs[uri] = schema
+            self._resource_docs[file_name] = schema
+            self._resource_docs[f"./{file_name}"] = schema
         self._registry = registry
 
     def list_schemas(self) -> list[SchemaDescriptor]:
@@ -95,6 +100,98 @@ class SchemaRegistry:
             errors.append(f"{loc}: {err.message}")
         errors.sort()
         return errors
+
+    def validate_tree(self) -> list[str]:
+        errors: list[str] = []
+        for key, schema in sorted(self._schemas.items()):
+            descriptor = self._descriptors[key]
+            try:
+                Draft202012Validator.check_schema(schema)
+            except SchemaError as exc:
+                errors.append(f"{descriptor.file}: invalid schema: {exc.message}")
+                continue
+
+            for ref in sorted(self._collect_refs(schema)):
+                target_schema, fragment = self._resolve_ref(schema, descriptor.file, ref)
+                if target_schema is None:
+                    errors.append(f"{descriptor.file}: unresolved $ref '{ref}'")
+                    continue
+                if not self._fragment_exists(target_schema, fragment):
+                    errors.append(f"{descriptor.file}: unresolved fragment '{ref}'")
+        return sorted(set(errors))
+
+    def _collect_refs(self, node: Any) -> set[str]:
+        refs: set[str] = set()
+        if isinstance(node, dict):
+            ref_value = node.get("$ref")
+            if isinstance(ref_value, str):
+                refs.add(ref_value)
+            for value in node.values():
+                refs.update(self._collect_refs(value))
+        elif isinstance(node, list):
+            for item in node:
+                refs.update(self._collect_refs(item))
+        return refs
+
+    def _resolve_ref(self, current_schema: dict[str, Any], current_file: str, ref: str) -> tuple[dict[str, Any] | None, str]:
+        base, fragment = urldefrag(ref)
+        if not base:
+            return current_schema, fragment
+
+        if base in self._resource_docs:
+            return self._resource_docs[base], fragment
+        if base.startswith("./") and base[2:] in self._resource_docs:
+            return self._resource_docs[base[2:]], fragment
+        if not base.startswith("./"):
+            rel = f"./{base}"
+            if rel in self._resource_docs:
+                return self._resource_docs[rel], fragment
+
+        # Resolve file-local relative paths from current file directory.
+        current_dir = str(Path(current_file).parent).replace("\\", "/")
+        if current_dir and current_dir != ".":
+            candidate = f"{current_dir}/{base}"
+            if candidate in self._resource_docs:
+                return self._resource_docs[candidate], fragment
+            if f"./{candidate}" in self._resource_docs:
+                return self._resource_docs[f"./{candidate}"], fragment
+        return None, fragment
+
+    def _fragment_exists(self, schema: dict[str, Any], fragment: str) -> bool:
+        if fragment == "":
+            return True
+        if fragment.startswith("/"):
+            return self._pointer_exists(schema, fragment)
+        return self._anchor_exists(schema, fragment)
+
+    def _pointer_exists(self, doc: Any, pointer: str) -> bool:
+        current = doc
+        for token in pointer.lstrip("/").split("/"):
+            token = token.replace("~1", "/").replace("~0", "~")
+            if isinstance(current, dict):
+                if token not in current:
+                    return False
+                current = current[token]
+                continue
+            if isinstance(current, list):
+                if not token.isdigit():
+                    return False
+                idx = int(token)
+                if idx < 0 or idx >= len(current):
+                    return False
+                current = current[idx]
+                continue
+            return False
+        return True
+
+    def _anchor_exists(self, doc: Any, anchor: str) -> bool:
+        if isinstance(doc, dict):
+            if doc.get("$anchor") == anchor:
+                return True
+            return any(self._anchor_exists(value, anchor) for value in doc.values())
+        if isinstance(doc, list):
+            return any(self._anchor_exists(item, anchor) for item in doc)
+        return False
 
 
 schema_registry = SchemaRegistry()

@@ -56,3 +56,11 @@ def validate_json(
         raise typer.Exit(1)
     console.print_json(json.dumps({"ok": True, "errors": []}, sort_keys=True))
 
+
+@app.command("validate-tree")
+def validate_tree() -> None:
+    errors = schema_registry.validate_tree()
+    if errors:
+        console.print_json(json.dumps({"ok": False, "errors": errors}, sort_keys=True))
+        raise typer.Exit(1)
+    console.print_json(json.dumps({"ok": True, "errors": [], "schema_count": len(schema_registry.list_schemas())}, sort_keys=True))

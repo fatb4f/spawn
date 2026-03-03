@@ -5,8 +5,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 import time
 import uuid
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -104,6 +106,20 @@ def _line_event_id(path: Path, line_no: int, line: str) -> str:
     return _hash([str(path), str(line_no), line])[:24]
 
 
+@contextmanager
+def _memory_lock():
+    lock_path = memory_dir() / ".lock"
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with lock_path.open("a+", encoding="utf-8") as handle:
+        import fcntl
+
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+
 def memory_id(kind: str, value: str) -> str:
     return f"mem-{_hash([kind, value])[:20]}"
 
@@ -116,6 +132,8 @@ def _append_jsonl(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
+        handle.flush()
+        os.fsync(handle.fileno())
 
 
 def _load_json(path: Path, default: Any) -> Any:
@@ -125,8 +143,26 @@ def _load_json(path: Path, default: Any) -> Any:
 
 
 def _write_json(path: Path, payload: Any) -> None:
+    _atomic_write_text(path, json.dumps(payload, sort_keys=True, indent=2) + "\n")
+
+
+def _atomic_write_text(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+    fd, tmp_name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".tmp", dir=str(path.parent))
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(content)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(tmp_name, path)
+        dir_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+    finally:
+        if os.path.exists(tmp_name):
+            os.unlink(tmp_name)
 
 
 def _extract_text(entry: dict[str, Any]) -> str:
@@ -325,98 +361,99 @@ def _load_events(path: Path) -> list[dict[str, Any]]:
 
 
 def ingest_sessions(session_root: Path | None = None, request_id: str | None = None) -> dict[str, int]:
-    rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
-    root = session_root or _default_session_root()
-    if not root.exists():
-        return {"processed_lines": 0, "events_written": 0, "accepted": 0, "proposals": 0}
-    cursor = _load_cursor()
+    with _memory_lock():
+        rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
+        root = session_root or _default_session_root()
+        if not root.exists():
+            return {"processed_lines": 0, "events_written": 0, "accepted": 0, "proposals": 0}
+        cursor = _load_cursor()
 
-    processed = 0
-    events_written = 0
-    accepted = 0
-    proposals = 0
-    out_path = events_path()
-    existing_memory = build_memory_state()
-    accepted_ids = {item["memory_id"] for item in existing_memory["memory"]}
+        processed = 0
+        events_written = 0
+        accepted = 0
+        proposals = 0
+        out_path = events_path()
+        existing_memory = build_memory_state()
+        accepted_ids = {item["memory_id"] for item in existing_memory["memory"]}
 
-    for path, _, line_no, line, _ in _iter_new_lines(root, cursor):
-        processed += 1
-        try:
-            row = json.loads(line)
-        except json.JSONDecodeError:
-            continue
-        role = _extract_role(row).strip().lower()
-        if role != "user":
-            continue
-        text = _extract_text(row)
-        source_ref = f"{path}:{line_no}"
-        for cand in _extract_candidates(text, source_ref):
-            mid = memory_id(cand.kind, cand.value)
-            pid = proposal_id(cand.kind, cand.value, cand.source_ref)
-            if mid in accepted_ids:
+        for path, _, line_no, line, _ in _iter_new_lines(root, cursor):
+            processed += 1
+            try:
+                row = json.loads(line)
+            except json.JSONDecodeError:
                 continue
+            role = _extract_role(row).strip().lower()
+            if role != "user":
+                continue
+            text = _extract_text(row)
+            source_ref = f"{path}:{line_no}"
+            for cand in _extract_candidates(text, source_ref):
+                mid = memory_id(cand.kind, cand.value)
+                pid = proposal_id(cand.kind, cand.value, cand.source_ref)
+                if mid in accepted_ids:
+                    continue
 
-            if _auto_accept(cand.kind, cand.confidence):
-                item = {
-                    "memory_id": mid,
-                    "id": mid,
-                    "kind": cand.kind,
-                    "claim": cand.claim,
-                    "value": cand.value,
-                    "confidence": cand.confidence,
-                    "provenance": {"source_ref": cand.source_ref, "evidence": cand.evidence},
-                    "first_seen_at": utc_now(),
-                    "last_seen_at": utc_now(),
-                    "status": "accepted",
-                    "tags": [],
-                }
-                payload = {"kind": "memory_patch", "upserts": [item], "deprecations": []}
-                event = _make_event(
-                    topic="spawn.memory.patch.applied",
-                    request_id=rid,
-                    dedupe_key=f"patch:{mid}",
-                    payload=payload,
-                    payload_schema="memory.patch",
-                )
-                _append_jsonl(out_path, event)
-                accepted_ids.add(mid)
-                accepted += 1
-                events_written += 1
-            else:
-                proposal = {
-                    "proposal_id": pid,
-                    "memory_id": mid,
-                    "kind": cand.kind,
-                    "claim": cand.claim,
-                    "value": cand.value,
-                    "confidence": cand.confidence,
-                    "source": {"source_ref": cand.source_ref},
-                    "evidence": cand.evidence,
-                    "proposed_by": "spawn.memory.extractor.v0",
-                    "gate_reason": "requires_review",
-                    "status": "pending",
-                    "created_at": utc_now(),
-                }
-                payload = {"kind": "memory_proposal", "proposal": proposal}
-                event = _make_event(
-                    topic="spawn.memory.proposal.created",
-                    request_id=rid,
-                    dedupe_key=f"proposal:{pid}",
-                    payload=payload,
-                    payload_schema="memory.proposal",
-                )
-                _append_jsonl(out_path, event)
-                proposals += 1
-                events_written += 1
+                if _auto_accept(cand.kind, cand.confidence):
+                    item = {
+                        "memory_id": mid,
+                        "id": mid,
+                        "kind": cand.kind,
+                        "claim": cand.claim,
+                        "value": cand.value,
+                        "confidence": cand.confidence,
+                        "provenance": {"source_ref": cand.source_ref, "evidence": cand.evidence},
+                        "first_seen_at": utc_now(),
+                        "last_seen_at": utc_now(),
+                        "status": "accepted",
+                        "tags": [],
+                    }
+                    payload = {"kind": "memory_patch", "upserts": [item], "deprecations": []}
+                    event = _make_event(
+                        topic="spawn.memory.patch.applied",
+                        request_id=rid,
+                        dedupe_key=f"patch:{mid}",
+                        payload=payload,
+                        payload_schema="memory.patch",
+                    )
+                    _append_jsonl(out_path, event)
+                    accepted_ids.add(mid)
+                    accepted += 1
+                    events_written += 1
+                else:
+                    proposal = {
+                        "proposal_id": pid,
+                        "memory_id": mid,
+                        "kind": cand.kind,
+                        "claim": cand.claim,
+                        "value": cand.value,
+                        "confidence": cand.confidence,
+                        "source": {"source_ref": cand.source_ref},
+                        "evidence": cand.evidence,
+                        "proposed_by": "spawn.memory.extractor.v0",
+                        "gate_reason": "requires_review",
+                        "status": "pending",
+                        "created_at": utc_now(),
+                    }
+                    payload = {"kind": "memory_proposal", "proposal": proposal}
+                    event = _make_event(
+                        topic="spawn.memory.proposal.created",
+                        request_id=rid,
+                        dedupe_key=f"proposal:{pid}",
+                        payload=payload,
+                        payload_schema="memory.proposal",
+                    )
+                    _append_jsonl(out_path, event)
+                    proposals += 1
+                    events_written += 1
 
-    _save_cursor(cursor)
-    rebuild_memory()
-    return {
-        "processed_lines": processed,
-        "events_written": events_written,
-        "accepted": accepted,
-        "proposals": proposals,
-    }
+        _save_cursor(cursor)
+        _rebuild_memory_unlocked()
+        return {
+            "processed_lines": processed,
+            "events_written": events_written,
+            "accepted": accepted,
+            "proposals": proposals,
+        }
 
 
 def build_memory_state() -> dict[str, Any]:
@@ -476,7 +513,7 @@ def render_prompt(memory_state: dict[str, Any]) -> str:
     return "\n".join(lines) + ("\n" if lines else "")
 
 
-def rebuild_memory() -> dict[str, Any]:
+def _rebuild_memory_unlocked() -> dict[str, Any]:
     state = build_memory_state()
     validate_or_raise("memory", state)
     accepted_payload = {"schema_name": "memory.accepted", "schema_version": "v1", "items": state["memory"]}
@@ -488,9 +525,14 @@ def rebuild_memory() -> dict[str, Any]:
     _write_json(proposals_path(), proposals_payload)
 
     rendered = render_prompt(state)
-    prompt_path().write_text(rendered, encoding="utf-8")
-    prompt_cache_path().write_text(rendered, encoding="utf-8")
+    _atomic_write_text(prompt_path(), rendered)
+    _atomic_write_text(prompt_cache_path(), rendered)
     return state
+
+
+def rebuild_memory() -> dict[str, Any]:
+    with _memory_lock():
+        return _rebuild_memory_unlocked()
 
 
 def list_memory() -> list[dict[str, Any]]:
@@ -521,67 +563,70 @@ def _append_control_event(topic: str, request_id: str, payload: dict[str, Any], 
 
 
 def accept_proposal(proposal_id_value: str, request_id: str | None = None) -> bool:
-    state = build_memory_state()
-    proposal = next((p for p in state["proposals"] if p.get("proposal_id") == proposal_id_value), None)
-    if not proposal:
-        return False
-    rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
-    item = {
-        "memory_id": proposal["memory_id"],
-        "id": proposal["memory_id"],
-        "kind": proposal["kind"],
-        "claim": proposal["claim"],
-        "value": proposal["value"],
-        "confidence": proposal["confidence"],
-        "provenance": {"source": proposal.get("source", {}), "evidence": proposal.get("evidence", [])},
-        "first_seen_at": proposal.get("created_at", utc_now()),
-        "last_seen_at": utc_now(),
-        "status": "accepted",
-        "tags": [],
-    }
-    _append_control_event(
-        topic="spawn.memory.patch.applied",
-        request_id=rid,
-        dedupe_key=f"accept:{proposal_id_value}",
-        payload={"kind": "memory_patch", "upserts": [item], "deprecations": []},
-    )
-    _append_control_event(
-        topic="spawn.memory.proposal.accepted",
-        request_id=rid,
-        dedupe_key=f"proposal-accepted:{proposal_id_value}",
-        payload={"kind": "memory_proposal.accepted", "proposal_id": proposal_id_value},
-    )
-    rebuild_memory()
-    return True
+    with _memory_lock():
+        state = build_memory_state()
+        proposal = next((p for p in state["proposals"] if p.get("proposal_id") == proposal_id_value), None)
+        if not proposal:
+            return False
+        rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
+        item = {
+            "memory_id": proposal["memory_id"],
+            "id": proposal["memory_id"],
+            "kind": proposal["kind"],
+            "claim": proposal["claim"],
+            "value": proposal["value"],
+            "confidence": proposal["confidence"],
+            "provenance": {"source": proposal.get("source", {}), "evidence": proposal.get("evidence", [])},
+            "first_seen_at": proposal.get("created_at", utc_now()),
+            "last_seen_at": utc_now(),
+            "status": "accepted",
+            "tags": [],
+        }
+        _append_control_event(
+            topic="spawn.memory.patch.applied",
+            request_id=rid,
+            dedupe_key=f"accept:{proposal_id_value}",
+            payload={"kind": "memory_patch", "upserts": [item], "deprecations": []},
+        )
+        _append_control_event(
+            topic="spawn.memory.proposal.accepted",
+            request_id=rid,
+            dedupe_key=f"proposal-accepted:{proposal_id_value}",
+            payload={"kind": "memory_proposal.accepted", "proposal_id": proposal_id_value},
+        )
+        _rebuild_memory_unlocked()
+        return True
 
 
 def reject_proposal(proposal_id_value: str, request_id: str | None = None) -> bool:
-    state = build_memory_state()
-    proposal = next((p for p in state["proposals"] if p.get("proposal_id") == proposal_id_value), None)
-    if not proposal:
-        return False
-    rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
-    _append_control_event(
-        topic="spawn.memory.proposal.rejected",
-        request_id=rid,
-        dedupe_key=f"proposal-rejected:{proposal_id_value}",
-        payload={"kind": "memory_proposal.rejected", "proposal_id": proposal_id_value},
-    )
-    rebuild_memory()
-    return True
+    with _memory_lock():
+        state = build_memory_state()
+        proposal = next((p for p in state["proposals"] if p.get("proposal_id") == proposal_id_value), None)
+        if not proposal:
+            return False
+        rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
+        _append_control_event(
+            topic="spawn.memory.proposal.rejected",
+            request_id=rid,
+            dedupe_key=f"proposal-rejected:{proposal_id_value}",
+            payload={"kind": "memory_proposal.rejected", "proposal_id": proposal_id_value},
+        )
+        _rebuild_memory_unlocked()
+        return True
 
 
 def deprecate_memory(memory_id_value: str, request_id: str | None = None) -> bool:
-    state = build_memory_state()
-    found = any(item.get("memory_id") == memory_id_value for item in state["memory"])
-    if not found:
-        return False
-    rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
-    _append_control_event(
-        topic="spawn.memory.patch.applied",
-        request_id=rid,
-        dedupe_key=f"deprecate:{memory_id_value}",
-        payload={"kind": "memory_patch", "upserts": [], "deprecations": [memory_id_value]},
-    )
-    rebuild_memory()
-    return True
+    with _memory_lock():
+        state = build_memory_state()
+        found = any(item.get("memory_id") == memory_id_value for item in state["memory"])
+        if not found:
+            return False
+        rid = request_id or f"mem-{uuid.uuid4().hex[:12]}"
+        _append_control_event(
+            topic="spawn.memory.patch.applied",
+            request_id=rid,
+            dedupe_key=f"deprecate:{memory_id_value}",
+            payload={"kind": "memory_patch", "upserts": [], "deprecations": [memory_id_value]},
+        )
+        _rebuild_memory_unlocked()
+        return True
