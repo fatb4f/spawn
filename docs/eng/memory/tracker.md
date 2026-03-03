@@ -32,12 +32,11 @@
 | M19 | Add SSOT schemas for cursor/snapshots/payloads | done | `memory.cursor`, `memory.accepted`, `memory.proposals`, `memory.patch`, `memory.proposal` |
 | M20 | Validate snapshot and cursor artifacts on write | done | cursor and snapshot writes blocked on schema validation |
 | M21 | Prefer systemd directories over XDG when available | done | resolve `STATE_DIRECTORY`/`CACHE_DIRECTORY` then fallback to XDG |
-| M17 | CI schema gates | todo | block on invalid or drift |
-| M18 | Contract fixture tests | todo | replay + compatibility |
+| M17 | CI schema gates | done | compile, gen-check, validate-tree, snapshot schema validation, e2e ingest/rebuild |
+| M18 | Contract fixture tests | done | golden replay fixture (`tests/golden_memory_replay.py`) |
 
 ## Risks / Blocks
-- `M17`: CI pipeline for schema validation and drift checks still pending.
-- `M18`: integration fixtures for replay/idempotency are still pending.
+- No active blockers.
 
 ## Decision Log
 - `2026-03-02`: JSON Schema is canonical for persisted SSOT artifacts.
@@ -45,3 +44,4 @@
 - `2026-03-02`: OpenAPI 3.1 is derived (catalog/docs) for current scope.
 - `2026-03-02`: Cross-repo execution sequencing captured in `plan.md` (Wave 0..5).
 - `2026-03-03`: Memory storage roots prefer `STATE_DIRECTORY`/`CACHE_DIRECTORY` and fallback to XDG.
+- `2026-03-03`: Added `spawnctl ssot validate-tree` and CI guardrails for schema/replay correctness.

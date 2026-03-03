@@ -58,6 +58,8 @@ Package source lives under `src/spawn/`.
 ## SSOT schema tools
 - List schemas:
   - `spawnctl ssot list`
+- Validate schema registry + references:
+  - `spawnctl ssot validate-tree`
 - Validate file:
   - `spawnctl ssot validate-file event.envelope /path/to/event.json`
 - Validate stdin JSON:
@@ -84,6 +86,10 @@ Proto contract:
   - `./scripts/gen.sh`
 - verify generated artifacts are committed:
   - `./scripts/check_gen.sh`
+
+## Validation and replay tests
+- golden replay determinism:
+  - `uv run python tests/golden_memory_replay.py`
 
 Canonical contract inputs:
 - `api/proto/spawn/v1/spawn_control.proto`

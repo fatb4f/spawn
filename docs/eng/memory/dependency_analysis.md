@@ -61,7 +61,7 @@
 - Current authority is Pydantic model files, but memory plan requires JSON Schema SSOT.
 
 4. Toolchain drift
-- No CI workflow currently enforces `scripts/check_gen.sh` on PRs.
+- CI now enforces generation/schema/replay checks; drift risk remains if local-only workflows bypass CI.
 
 ## Dependency Actions (Required)
 - Introduce `src/spawn/ssot/schemas` and make it authoritative for persisted artifacts.

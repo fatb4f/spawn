@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  build-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Compile Python sources
+        run: uv run python -m compileall src
+
+      - name: Check generated artifacts
+        run: ./scripts/check_gen.sh
+
+      - name: Validate schema tree
+        run: uv run spawnctl ssot validate-tree
+
+      - name: Golden replay determinism
+        run: uv run python tests/golden_memory_replay.py
+
+      - name: E2E ingest with systemd-style dirs
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          mkdir -p "$tmp/sessions" "$tmp/state/spawn" "$tmp/cache/spawn"
+          cat > "$tmp/sessions/session.jsonl" <<'JSONL'
+          {"role":"user","content":"I prefer concise responses"}
+          {"role":"user","content":"My timezone is America/New_York"}
+          JSONL
+
+          STATE_DIRECTORY="$tmp/state/spawn" CACHE_DIRECTORY="$tmp/cache/spawn" \
+            uv run spawnctl memory ingest --sessions-root "$tmp/sessions"
+
+          STATE_DIRECTORY="$tmp/state/spawn" CACHE_DIRECTORY="$tmp/cache/spawn" \
+            uv run spawnctl memory rebuild
+
+          STATE_DIRECTORY="$tmp/state/spawn" CACHE_DIRECTORY="$tmp/cache/spawn" \
+            uv run spawnctl ssot validate-file memory.cursor "$tmp/state/spawn/memory/memory.cursor.json"
+          STATE_DIRECTORY="$tmp/state/spawn" CACHE_DIRECTORY="$tmp/cache/spawn" \
+            uv run spawnctl ssot validate-file memory.accepted "$tmp/state/spawn/memory/memory.accepted.json"
+          STATE_DIRECTORY="$tmp/state/spawn" CACHE_DIRECTORY="$tmp/cache/spawn" \
+            uv run spawnctl ssot validate-file memory.proposals "$tmp/state/spawn/memory/memory.proposals.json"
