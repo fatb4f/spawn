@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory.cursor.schema.json",
+  "title": "memory.cursor",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "files"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "memory.cursor"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": [
+          "inode",
+          "offset",
+          "updated_at"
+        ],
+        "properties": {
+          "inode": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updated_at": {
+            "type": "string",
+            "minLength": 1
+          },
+          "last_event_id": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

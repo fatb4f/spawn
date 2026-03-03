@@ -14,8 +14,9 @@ from typing import Any
 from spawn.ssot.validate import validate_or_raise
 
 try:
-    from xdg_base_dirs import xdg_state_home
+    from xdg_base_dirs import xdg_cache_home, xdg_state_home
 except ImportError:  # pragma: no cover
+    xdg_cache_home = None
     xdg_state_home = None
 
 
@@ -25,8 +26,41 @@ def _xdg_state_home() -> Path:
     return Path(os.environ.get("XDG_STATE_HOME", "~/.local/state")).expanduser()
 
 
+def _xdg_cache_home() -> Path:
+    if xdg_cache_home is not None:
+        return xdg_cache_home()
+    return Path(os.environ.get("XDG_CACHE_HOME", "~/.cache")).expanduser()
+
+
+def _systemd_directory(env_name: str) -> Path | None:
+    value = os.environ.get(env_name, "").strip()
+    if not value:
+        return None
+    # systemd may return a colon-separated list; we currently need only the first.
+    first = value.split(":", 1)[0].strip()
+    if not first:
+        return None
+    return Path(first).expanduser()
+
+
+def _state_root() -> Path:
+    root = _systemd_directory("STATE_DIRECTORY")
+    if root is None:
+        root = _xdg_state_home() / "spawn"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _cache_root() -> Path:
+    root = _systemd_directory("CACHE_DIRECTORY")
+    if root is None:
+        root = _xdg_cache_home() / "spawn"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def memory_dir() -> Path:
-    path = _xdg_state_home() / "spawn" / "memory"
+    path = _state_root() / "memory"
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -49,6 +83,12 @@ def proposals_path() -> Path:
 
 def prompt_path() -> Path:
     return memory_dir() / "memory.prompt.txt"
+
+
+def prompt_cache_path() -> Path:
+    path = _cache_root() / "memory" / "memory.prompt.txt"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def utc_now() -> str:
@@ -180,7 +220,16 @@ def _extract_candidates(text: str, source_ref: str) -> list[Candidate]:
     return out
 
 
-def _make_event(topic: str, request_id: str, dedupe_key: str, payload: dict[str, Any]) -> dict[str, Any]:
+def _make_event(
+    topic: str,
+    request_id: str,
+    dedupe_key: str,
+    payload: dict[str, Any],
+    *,
+    payload_schema: str | None = None,
+) -> dict[str, Any]:
+    if payload_schema:
+        validate_or_raise(payload_schema, payload)
     row = {
         "schema_name": "event.envelope",
         "schema_version": "v1",
@@ -205,11 +254,26 @@ def _default_session_root() -> Path:
     return Path(os.environ.get("CODEX_SESSIONS_ROOT", "~/.config/codex/sessions")).expanduser()
 
 
+def _default_cursor_state() -> dict[str, Any]:
+    return {"schema_name": "memory.cursor", "schema_version": "v1", "files": {}}
+
+
 def _load_cursor() -> dict[str, Any]:
-    return _load_json(cursor_path(), {"files": {}})
+    path = cursor_path()
+    payload = _load_json(path, _default_cursor_state())
+    if isinstance(payload, dict) and "schema_name" not in payload and isinstance(payload.get("files"), dict):
+        # Backward-compat migration for old cursor format.
+        payload = {
+            "schema_name": "memory.cursor",
+            "schema_version": "v1",
+            "files": payload.get("files", {}),
+        }
+    validate_or_raise("memory.cursor", payload)
+    return payload
 
 
 def _save_cursor(payload: dict[str, Any]) -> None:
+    validate_or_raise("memory.cursor", payload)
     _write_json(cursor_path(), payload)
 
 
@@ -221,6 +285,7 @@ def _iter_new_lines(session_root: Path, cursor: dict[str, Any]):
         prev = files.get(key, {})
         prev_inode = int(prev.get("inode", 0))
         prev_offset = int(prev.get("offset", 0))
+        latest_event_id = str(prev.get("last_event_id", ""))
         inode = int(st.st_ino)
         size = int(st.st_size)
         offset = prev_offset if prev_inode == inode and prev_offset <= size else 0
@@ -232,12 +297,14 @@ def _iter_new_lines(session_root: Path, cursor: dict[str, Any]):
                 line = raw.strip()
                 if not line:
                     continue
-                yield path, key, line_no, line
+                line_event_id = _line_event_id(path, line_no, line)
+                latest_event_id = line_event_id
+                yield path, key, line_no, line, line_event_id
             files[key] = {
                 "inode": inode,
                 "offset": handle.tell(),
                 "updated_at": utc_now(),
-                "last_event_id": str(prev.get("last_event_id", "")),
+                "last_event_id": latest_event_id,
             }
 
 
@@ -272,11 +339,8 @@ def ingest_sessions(session_root: Path | None = None, request_id: str | None = N
     existing_memory = build_memory_state()
     accepted_ids = {item["memory_id"] for item in existing_memory["memory"]}
 
-    files = cursor.setdefault("files", {})
-    for path, key, line_no, line in _iter_new_lines(root, cursor):
+    for path, _, line_no, line, _ in _iter_new_lines(root, cursor):
         processed += 1
-        files.setdefault(key, {})
-        files[key]["last_event_id"] = _line_event_id(path, line_no, line)
         try:
             row = json.loads(line)
         except json.JSONDecodeError:
@@ -312,6 +376,7 @@ def ingest_sessions(session_root: Path | None = None, request_id: str | None = N
                     request_id=rid,
                     dedupe_key=f"patch:{mid}",
                     payload=payload,
+                    payload_schema="memory.patch",
                 )
                 _append_jsonl(out_path, event)
                 accepted_ids.add(mid)
@@ -338,6 +403,7 @@ def ingest_sessions(session_root: Path | None = None, request_id: str | None = N
                     request_id=rid,
                     dedupe_key=f"proposal:{pid}",
                     payload=payload,
+                    payload_schema="memory.proposal",
                 )
                 _append_jsonl(out_path, event)
                 proposals += 1
@@ -413,12 +479,17 @@ def render_prompt(memory_state: dict[str, Any]) -> str:
 def rebuild_memory() -> dict[str, Any]:
     state = build_memory_state()
     validate_or_raise("memory", state)
-    _write_json(accepted_path(), {"schema_name": "memory.accepted", "schema_version": "v1", "items": state["memory"]})
-    _write_json(
-        proposals_path(),
-        {"schema_name": "memory.proposals", "schema_version": "v1", "items": state["proposals"]},
-    )
-    prompt_path().write_text(render_prompt(state), encoding="utf-8")
+    accepted_payload = {"schema_name": "memory.accepted", "schema_version": "v1", "items": state["memory"]}
+    validate_or_raise("memory.accepted", accepted_payload)
+    _write_json(accepted_path(), accepted_payload)
+
+    proposals_payload = {"schema_name": "memory.proposals", "schema_version": "v1", "items": state["proposals"]}
+    validate_or_raise("memory.proposals", proposals_payload)
+    _write_json(proposals_path(), proposals_payload)
+
+    rendered = render_prompt(state)
+    prompt_path().write_text(rendered, encoding="utf-8")
+    prompt_cache_path().write_text(rendered, encoding="utf-8")
     return state
 
 
@@ -433,7 +504,19 @@ def list_proposals() -> list[dict[str, Any]]:
 
 
 def _append_control_event(topic: str, request_id: str, payload: dict[str, Any], dedupe_key: str) -> None:
-    event = _make_event(topic=topic, request_id=request_id, payload=payload, dedupe_key=dedupe_key)
+    payload_schema = None
+    kind = str(payload.get("kind", ""))
+    if kind == "memory_patch":
+        payload_schema = "memory.patch"
+    elif kind == "memory_proposal":
+        payload_schema = "memory.proposal"
+    event = _make_event(
+        topic=topic,
+        request_id=request_id,
+        payload=payload,
+        dedupe_key=dedupe_key,
+        payload_schema=payload_schema,
+    )
     _append_jsonl(events_path(), event)
 
 

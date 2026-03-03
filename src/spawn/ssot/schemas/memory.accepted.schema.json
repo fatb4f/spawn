@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory.accepted.schema.json",
+  "title": "memory.accepted",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "items"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "memory.accepted"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "./memory.schema.json#/definitions/memory_item"
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -67,6 +67,36 @@
       "version": "v1",
       "file": "memory.schema.json",
       "canonical": true
+    },
+    {
+      "name": "memory.cursor",
+      "version": "v1",
+      "file": "memory.cursor.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "memory.accepted",
+      "version": "v1",
+      "file": "memory.accepted.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "memory.proposals",
+      "version": "v1",
+      "file": "memory.proposals.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "memory.patch",
+      "version": "v1",
+      "file": "memory.patch.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "memory.proposal",
+      "version": "v1",
+      "file": "memory.proposal.schema.json",
+      "canonical": true
     }
   ]
 }

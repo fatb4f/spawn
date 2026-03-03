@@ -29,6 +29,9 @@
 | M14 | Memory CLI (`list/proposals/accept/reject/deprecate`) | done | operator review loop added |
 | M15 | `spawnctl memory render` | done | deterministic prompt output |
 | M16 | `spawnctl memory rebuild` | done | full replay from SSOT |
+| M19 | Add SSOT schemas for cursor/snapshots/payloads | done | `memory.cursor`, `memory.accepted`, `memory.proposals`, `memory.patch`, `memory.proposal` |
+| M20 | Validate snapshot and cursor artifacts on write | done | cursor and snapshot writes blocked on schema validation |
+| M21 | Prefer systemd directories over XDG when available | done | resolve `STATE_DIRECTORY`/`CACHE_DIRECTORY` then fallback to XDG |
 | M17 | CI schema gates | todo | block on invalid or drift |
 | M18 | Contract fixture tests | todo | replay + compatibility |
 
@@ -41,3 +44,4 @@
 - `2026-03-02`: Proto3 is canonical for control-plane RPC only.
 - `2026-03-02`: OpenAPI 3.1 is derived (catalog/docs) for current scope.
 - `2026-03-02`: Cross-repo execution sequencing captured in `plan.md` (Wave 0..5).
+- `2026-03-03`: Memory storage roots prefer `STATE_DIRECTORY`/`CACHE_DIRECTORY` and fallback to XDG.

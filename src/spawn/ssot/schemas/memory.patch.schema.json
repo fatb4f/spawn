@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory.patch.schema.json",
+  "title": "memory.patch",
+  "type": "object",
+  "required": [
+    "kind",
+    "upserts",
+    "deprecations"
+  ],
+  "properties": {
+    "kind": {
+      "const": "memory_patch"
+    },
+    "upserts": {
+      "type": "array",
+      "items": {
+        "$ref": "./memory.schema.json#/definitions/memory_item"
+      }
+    },
+    "deprecations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    }
+  },
+  "additionalProperties": false
+}

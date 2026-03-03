@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory.proposals.schema.json",
+  "title": "memory.proposals",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "items"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "memory.proposals"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "$ref": "./memory.schema.json#/definitions/memory_proposal"
+      }
+    }
+  },
+  "additionalProperties": false
+}
