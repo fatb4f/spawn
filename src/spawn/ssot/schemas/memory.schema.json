@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory.schema.json",
+  "title": "memory",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "memory",
+    "proposals",
+    "tombstones"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "memory"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "memory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/memory_item"
+      }
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/memory_proposal"
+      }
+    },
+    "tombstones": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/memory_tombstone"
+      }
+    }
+  },
+  "definitions": {
+    "memory_item": {
+      "type": "object",
+      "required": [
+        "memory_id",
+        "id",
+        "kind",
+        "claim",
+        "value",
+        "provenance",
+        "first_seen_at",
+        "last_seen_at",
+        "status"
+      ],
+      "properties": {
+        "memory_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "preference",
+            "identity",
+            "project_fact",
+            "workflow",
+            "constraint",
+            "glossary"
+          ]
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "first_seen_at": {
+          "type": "string"
+        },
+        "last_seen_at": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "accepted",
+            "deprecated"
+          ]
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "memory_proposal": {
+      "type": "object",
+      "required": [
+        "proposal_id",
+        "kind",
+        "claim",
+        "value",
+        "confidence",
+        "source",
+        "evidence",
+        "proposed_by",
+        "gate_reason",
+        "status",
+        "created_at"
+      ],
+      "properties": {
+        "proposal_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "memory_id": {
+          "type": "string"
+        },
+        "kind": {
+          "enum": [
+            "preference",
+            "identity",
+            "project_fact",
+            "workflow",
+            "constraint",
+            "glossary"
+          ]
+        },
+        "claim": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "proposed_by": {
+          "type": "string"
+        },
+        "gate_reason": {
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "accepted",
+            "rejected"
+          ]
+        },
+        "created_at": {
+          "type": "string"
+        },
+        "reviewed_at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "memory_tombstone": {
+      "type": "object",
+      "required": [
+        "memory_id",
+        "reason",
+        "at"
+      ],
+      "properties": {
+        "memory_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "at": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

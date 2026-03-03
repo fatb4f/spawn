@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "reason.codes.schema.json",
+  "title": "reason.codes",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "codes"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "reason.codes"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "codes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "class",
+          "severity"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^[A-Z]+(\\.[A-Z0-9_]+)+$"
+          },
+          "class": {
+            "enum": [
+              "DETERMINISTIC",
+              "TRANSIENT",
+              "POLICY",
+              "SECURITY",
+              "INFRA"
+            ]
+          },
+          "severity": {
+            "enum": [
+              "INFO",
+              "WARN",
+              "ERROR",
+              "CRITICAL"
+            ]
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -8,8 +8,10 @@ import time
 import uuid
 from pathlib import Path
 
-from spawn.contracts.envelopes import make_action_result, utc_now
+from spawn.contracts.task_results import make_task_result
+from spawn.contracts.envelopes import utc_now
 from spawn.core import service as spawnd
+from spawn.ssot.validate import validate_or_raise
 
 
 def default_log_path() -> Path:
@@ -62,21 +64,37 @@ def latest_result_for_request(path: Path, request_id: str) -> dict | None:
 
 def run_transient_worker(request_id: str, event_id: str, refresh_command: str, log_path: Path | str) -> int:
     path = Path(log_path).expanduser()
+    queue_payload = {
+        "schema_name": "work.queue",
+        "schema_version": "v1",
+        "run_id": f"run-{request_id}",
+        "base_ref": event_id or "manual",
+        "max_workers": 1,
+        "tasks": [
+            {
+                "task_id": "codex.refresh_context",
+                "goal": refresh_command,
+                "status": "RUNNING",
+            }
+        ],
+    }
+    validate_or_raise("work.queue", queue_payload)
+
     started = utc_now()
     rc, out, err = spawnd.run_command(refresh_command)
     finished = utc_now()
     append_log(
         path,
-        make_action_result(
+        make_task_result(
             event_id=event_id,
             request_id=request_id,
-            status="ok" if rc == 0 else "failed",
+            status="PASS" if rc == 0 else "FAIL",
             return_code=rc,
             started_at=started,
             finished_at=finished,
             stdout=out,
             stderr=err,
-            action="codex.refresh_context",
+            reason_code="DETERMINISTIC.OK" if rc == 0 else "TRANSIENT.CMD_FAILED",
         ),
     )
     return rc

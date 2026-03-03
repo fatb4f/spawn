@@ -14,7 +14,9 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from spawn.contracts.envelopes import make_action_request, make_action_result, parse_event_envelope, utc_now
+from spawn.contracts.envelopes import make_action_request, parse_event_envelope, utc_now
+from spawn.contracts.task_results import make_task_result
+from spawn.ssot.validate import validate_or_raise
 
 try:
     from dataconfy import ConfigManager
@@ -90,6 +92,29 @@ def default_values() -> dict[str, Any]:
     }
 
 
+def default_toml_text() -> str:
+    cfg = default_values()["codex_session_refresh"]
+    topics = ", ".join(f'"{topic}"' for topic in cfg["topics"])
+    lines = [
+        "[codex_session_refresh]",
+        f'source_command = "{cfg["source_command"]}"',
+        f'refresh_command = "{cfg["refresh_command"]}"',
+        f"topics = [{topics}]",
+        f'debounce_seconds = {float(cfg["debounce_seconds"]):.1f}',
+        f'log_path = "{cfg["log_path"]}"',
+        f'execution_mode = "{cfg["execution_mode"]}"',
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_default_config(path: Path, *, force: bool = False) -> None:
+    if path.exists() and not force:
+        raise SystemExit(f"config already exists: {path} (use --write-config --force to overwrite)")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(default_toml_text(), encoding="utf-8")
+
+
 def load_config_via_dataconfy(path: Path) -> dict[str, Any] | None:
     if ConfigManager is None:
         return None
@@ -139,6 +164,22 @@ def append_log(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
+
+
+def to_ssot_event(event: dict[str, Any], run_id: str) -> dict[str, Any]:
+    row = {
+        "schema_name": "event.envelope",
+        "schema_version": "v1",
+        "event_id": str(event.get("event_id", "")),
+        "request_id": "",
+        "ts": str(event.get("observed_at", utc_now())),
+        "topic": str(event.get("event_type", "")),
+        "source": str(event.get("source", "spawn.codex-event-source")),
+        "run_id": run_id,
+        "dedupe_key": str(event.get("dedupe_key", "")),
+        "payload": event.get("payload", {}),
+    }
+    return row
 
 
 def iter_jsonl_from_command(command: str):
@@ -209,7 +250,13 @@ def dispatch_transient_refresh(
 
 
 def cmd_codex_refresh(args: argparse.Namespace) -> int:
-    cfg = load_config(Path(args.config).expanduser())
+    config_path = Path(args.config).expanduser()
+    if args.write_config:
+        write_default_config(config_path, force=args.force)
+        print(config_path)
+        return 0
+
+    cfg = load_config(config_path)
     section = cfg["codex_session_refresh"]
 
     source_command = args.source_command or str(
@@ -242,16 +289,35 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
         except (ValueError, json.JSONDecodeError):
             append_log(
                 log_path,
-                make_action_result(
+                make_task_result(
                     event_id=str(uuid.uuid4()),
                     request_id=str(uuid.uuid4()),
-                    status="invalid_event",
+                    status="FAIL",
                     return_code=1,
                     started_at=utc_now(),
                     finished_at=utc_now(),
                     stdout="",
                     stderr="invalid event_envelope_v1 line",
-                    action="codex.refresh_context",
+                    reason_code="DETERMINISTIC.SCHEMA_INVALID",
+                ),
+            )
+            continue
+
+        try:
+            validate_or_raise("event.envelope", to_ssot_event(event, run_id="codex-session-refresh"))
+        except Exception as exc:
+            append_log(
+                log_path,
+                make_task_result(
+                    event_id=str(event.get("event_id", str(uuid.uuid4()))),
+                    request_id=str(uuid.uuid4()),
+                    status="FAIL",
+                    return_code=1,
+                    started_at=utc_now(),
+                    finished_at=utc_now(),
+                    stdout="",
+                    stderr=f"event validation failed: {exc}",
+                    reason_code="DETERMINISTIC.SCHEMA_INVALID",
                 ),
             )
             continue
@@ -273,6 +339,38 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
             retry="none",
             execution_class=execution_mode,
         )
+        work_queue = {
+            "schema_name": "work.queue",
+            "schema_version": "v1",
+            "run_id": f"run-{request['request_id']}",
+            "base_ref": str(request["event_id"]),
+            "max_workers": 1,
+            "tasks": [
+                {
+                    "task_id": str(request["request_id"]),
+                    "goal": refresh_command,
+                    "status": "QUEUED",
+                }
+            ],
+        }
+        try:
+            validate_or_raise("work.queue", work_queue)
+        except Exception as exc:
+            append_log(
+                log_path,
+                make_task_result(
+                    event_id=str(request["event_id"]),
+                    request_id=str(request["request_id"]),
+                    status="FAIL",
+                    return_code=1,
+                    started_at=utc_now(),
+                    finished_at=utc_now(),
+                    stdout="",
+                    stderr=f"pre-dispatch validation failed: {exc}",
+                    reason_code="DETERMINISTIC.SCHEMA_INVALID",
+                ),
+            )
+            continue
         if execution_mode == "transient":
             started = utc_now()
             rc, out, err = dispatch_transient_refresh(
@@ -284,16 +382,16 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
             finished = utc_now()
             append_log(
                 log_path,
-                make_action_result(
+                make_task_result(
                     event_id=request["event_id"],
                     request_id=request["request_id"],
-                    status="dispatched" if rc == 0 else "dispatch_failed",
+                    status="DISPATCHED" if rc == 0 else "DISPATCH_FAILED",
                     return_code=rc,
                     started_at=started,
                     finished_at=finished,
                     stdout=out,
                     stderr=err,
-                    action="codex.refresh_context.dispatch",
+                    reason_code="DETERMINISTIC.OK" if rc == 0 else "INFRA.DISPATCH_FAILED",
                 ),
             )
             continue
@@ -303,16 +401,16 @@ def cmd_codex_refresh(args: argparse.Namespace) -> int:
         finished = utc_now()
         append_log(
             log_path,
-            make_action_result(
+            make_task_result(
                 event_id=request["event_id"],
                 request_id=request["request_id"],
-                status="ok" if rc == 0 else "failed",
+                status="PASS" if rc == 0 else "FAIL",
                 return_code=rc,
                 started_at=started,
                 finished_at=finished,
                 stdout=out,
                 stderr=err,
-                action=request["action"],
+                reason_code="DETERMINISTIC.OK" if rc == 0 else "TRANSIENT.CMD_FAILED",
             ),
         )
     return 0
@@ -331,6 +429,16 @@ def build_parser() -> argparse.ArgumentParser:
 
     p = sub.add_parser("codex-session-refresh", help="Refresh codex context on session events")
     p.add_argument("--config", default=str(default_config_path()))
+    p.add_argument(
+        "--write-config",
+        action="store_true",
+        help="Write default config to --config and exit.",
+    )
+    p.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite when used with --write-config.",
+    )
     p.add_argument("--source-command", default="")
     p.add_argument("--refresh-command", default="")
     p.add_argument("--topics", default="", help="Comma-separated topics.")

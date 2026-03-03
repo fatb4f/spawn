@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "task.result.schema.json",
+  "title": "task.result",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "run_id",
+    "task_id",
+    "status",
+    "request_id",
+    "event_id"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "task.result"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "request_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "event_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "BLOCKED",
+        "DISPATCHED",
+        "DISPATCH_FAILED"
+      ]
+    },
+    "reason_code": {
+      "type": "string",
+      "pattern": "^[A-Z]+(\\.[A-Z0-9_]+)+$"
+    },
+    "return_code": {
+      "type": "integer"
+    },
+    "started_at": {
+      "type": "string"
+    },
+    "finished_at": {
+      "type": "string"
+    },
+    "stdout": {
+      "type": "string"
+    },
+    "stderr": {
+      "type": "string"
+    },
+    "telemetry_ref": {
+      "$ref": "./evidence.bundle.telemetry.schema.json"
+    }
+  },
+  "additionalProperties": true
+}

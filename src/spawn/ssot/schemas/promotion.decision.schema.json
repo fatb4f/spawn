@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "promotion.decision.schema.json",
+  "title": "promotion.decision",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "run_id",
+    "decision",
+    "reason_codes",
+    "confidence",
+    "risk_score",
+    "gate_decision_ref"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "promotion.decision"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "decision": {
+      "enum": [
+        "APPROVE",
+        "REJECT",
+        "NEEDS_HUMAN"
+      ]
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z]+(\\.[A-Z0-9_]+)+$"
+      }
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "risk_score": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "gate_decision_ref": {
+      "type": "object",
+      "required": [
+        "task_id"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string"
+        },
+        "telemetry_ref": {
+          "$ref": "./evidence.bundle.telemetry.schema.json"
+        }
+      },
+      "additionalProperties": true
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

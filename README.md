@@ -27,6 +27,11 @@ cd ~/src/spawn
 spawnctl daemon serve-api
 ```
 
+Generate default daemon config (optional):
+```bash
+spawnctl daemon write-config
+```
+
 ## Install (packaged)
 ```bash
 cd ~/src/spawn
@@ -49,6 +54,27 @@ Package source lives under `src/spawn/`.
   - `spawnctl codex-session status --request-id <id>`
   - `spawnctl codex-session logs --request-id <id>`
   - `spawnctl codex-session list`
+
+## SSOT schema tools
+- List schemas:
+  - `spawnctl ssot list`
+- Validate file:
+  - `spawnctl ssot validate-file event.envelope /path/to/event.json`
+- Validate stdin JSON:
+  - `cat payload.json | spawnctl ssot validate-json event.envelope`
+
+## Memory V0 commands
+- Ingest codex session deltas:
+  - `spawnctl memory ingest`
+- Review:
+  - `spawnctl memory list`
+  - `spawnctl memory proposals`
+  - `spawnctl memory accept <proposal_id>`
+  - `spawnctl memory reject <proposal_id>`
+  - `spawnctl memory deprecate <memory_id>`
+- Rebuild / render:
+  - `spawnctl memory rebuild`
+  - `spawnctl memory render`
 
 Proto contract:
 - `api/proto/spawn/v1/spawn_control.proto`

@@ -1,0 +1,72 @@
+{
+  "schema_name": "schema.index",
+  "schema_version": "v1",
+  "schemas": [
+    {
+      "name": "event.envelope",
+      "version": "v1",
+      "file": "event.envelope.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "evidence.bundle.telemetry",
+      "version": "v1",
+      "file": "evidence.bundle.telemetry.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "evidence.capsule",
+      "version": "v1",
+      "file": "evidence.capsule.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "reason.codes",
+      "version": "v1",
+      "file": "reason.codes.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "work.queue",
+      "version": "v1",
+      "file": "work.queue.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "task.result",
+      "version": "v1",
+      "file": "task.result.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "gate.decision",
+      "version": "v1",
+      "file": "gate.decision.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "promotion.decision",
+      "version": "v1",
+      "file": "promotion.decision.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "run.manifest",
+      "version": "v1",
+      "file": "run.manifest.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "state.space",
+      "version": "v1",
+      "file": "state.space.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "memory",
+      "version": "v1",
+      "file": "memory.schema.json",
+      "canonical": true
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "state.space.schema.json",
+  "title": "state.space",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "memory",
+    "task_preferences",
+    "work_items"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "state.space"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "memory": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "claim",
+          "provenance"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "claim": {
+            "type": "string"
+          },
+          "provenance": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "task_preferences": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "work_items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}
