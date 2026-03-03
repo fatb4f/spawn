@@ -552,6 +552,8 @@ def _append_control_event(topic: str, request_id: str, payload: dict[str, Any], 
         payload_schema = "memory.patch"
     elif kind == "memory_proposal":
         payload_schema = "memory.proposal"
+    elif kind in {"memory_proposal.accepted", "memory_proposal.rejected"}:
+        payload_schema = "memory.proposal.decision"
     event = _make_event(
         topic=topic,
         request_id=request_id,

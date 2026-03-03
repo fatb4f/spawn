@@ -1,0 +1,22 @@
+{
+  "kind": "memory_patch",
+  "upserts": [
+    {
+      "memory_id": "mem-pref-001",
+      "id": "mem-pref-001",
+      "kind": "preference",
+      "claim": "I prefer concise answers",
+      "value": "I prefer concise answers",
+      "confidence": 0.92,
+      "provenance": {
+        "source_ref": "fixtures/session.jsonl:1",
+        "evidence": ["I prefer concise answers"]
+      },
+      "first_seen_at": "2026-03-03T00:00:00Z",
+      "last_seen_at": "2026-03-03T00:00:00Z",
+      "status": "accepted",
+      "tags": []
+    }
+  ],
+  "deprecations": []
+}

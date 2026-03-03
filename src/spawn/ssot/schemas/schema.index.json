@@ -97,6 +97,12 @@
       "version": "v1",
       "file": "memory.proposal.schema.json",
       "canonical": true
+    },
+    {
+      "name": "memory.proposal.decision",
+      "version": "v1",
+      "file": "memory.proposal.decision.schema.json",
+      "canonical": true
     }
   ]
 }

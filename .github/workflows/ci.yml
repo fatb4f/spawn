@@ -33,6 +33,14 @@ jobs:
       - name: Validate schema tree
         run: uv run spawnctl ssot validate-tree
 
+      - name: Validate memory payload fixtures
+        run: |
+          set -euo pipefail
+          uv run spawnctl ssot validate-file memory.patch tests/fixtures/memory_payloads/memory.patch.json
+          uv run spawnctl ssot validate-file memory.proposal tests/fixtures/memory_payloads/memory.proposal.json
+          uv run spawnctl ssot validate-file memory.proposal.decision tests/fixtures/memory_payloads/memory.proposal.accepted.json
+          uv run spawnctl ssot validate-file memory.proposal.decision tests/fixtures/memory_payloads/memory.proposal.rejected.json
+
       - name: Golden replay determinism
         run: uv run python tests/golden_memory_replay.py
 

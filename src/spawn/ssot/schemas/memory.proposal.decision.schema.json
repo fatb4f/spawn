@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "memory.proposal.decision.schema.json",
+  "title": "memory.proposal.decision",
+  "type": "object",
+  "required": [
+    "kind",
+    "proposal_id"
+  ],
+  "properties": {
+    "kind": {
+      "enum": [
+        "memory_proposal.accepted",
+        "memory_proposal.rejected"
+      ]
+    },
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}
