@@ -38,7 +38,8 @@
             "additionalProperties": true
           }
         },
-        "additionalProperties": true
+        "additionalProperties": true,
+        "description": "Minimal memory record used for state-space interoperability."
       }
     },
     "task_preferences": {
@@ -53,5 +54,6 @@
       }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "description": "State-space snapshot container used for memory, preferences, and work-item context."
 }

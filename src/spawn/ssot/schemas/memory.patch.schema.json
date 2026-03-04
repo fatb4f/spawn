@@ -26,5 +26,6 @@
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Patch payload for accepted memory upserts and deprecations."
 }

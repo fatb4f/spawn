@@ -36,7 +36,8 @@
           "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": true,
+      "description": "Trace correlation identifiers used to stitch decisions across components."
     },
     "signals": {
       "type": "object",
@@ -76,8 +77,10 @@
           "minimum": 0
         }
       },
-      "additionalProperties": true
+      "additionalProperties": true,
+      "description": "Artifact pointer with integrity hash for reproducible evidence review."
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Evidence capsule combining trace correlation, signals, and immutable artifact pointers."
 }

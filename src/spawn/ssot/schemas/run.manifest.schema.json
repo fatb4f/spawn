@@ -52,5 +52,6 @@
       "additionalProperties": true
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Reproducibility manifest for one run, including inputs, commands, artifacts, and runtime metadata."
 }

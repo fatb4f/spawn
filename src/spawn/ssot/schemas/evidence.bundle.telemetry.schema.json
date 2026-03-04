@@ -30,7 +30,8 @@
           "type": "string"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": true,
+      "description": "OpenTelemetry correlation identifiers and optional backend metadata."
     },
     "signals": {
       "type": "object",
@@ -50,5 +51,6 @@
       }
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "description": "Telemetry bundle linking traces, scalar signals, and optional artifact references."
 }

@@ -19,5 +19,6 @@
       "minLength": 1
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Review decision payload for accepting or rejecting a pending memory proposal."
 }

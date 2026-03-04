@@ -51,9 +51,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Single normalized reason code definition."
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Registry payload defining normalized reason code taxonomy used by decisions."
 }

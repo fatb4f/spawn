@@ -15,5 +15,6 @@
       "$ref": "./memory.schema.json#/definitions/memory_proposal"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Proposal payload wrapper emitted when auto-accept policy does not apply."
 }

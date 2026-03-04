@@ -22,5 +22,6 @@
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Snapshot of pending and reviewed memory proposals."
 }

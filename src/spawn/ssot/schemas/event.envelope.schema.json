@@ -52,5 +52,6 @@
       "type": "object"
     }
   },
-  "additionalProperties": true
+  "additionalProperties": true,
+  "description": "Canonical envelope for all persisted spawn events crossing systemd unit boundaries."
 }

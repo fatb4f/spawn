@@ -41,9 +41,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Cursor checkpoint for one source file (inode+offset+event watermark)."
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Per-source cursor checkpoints for deterministic incremental memory ingestion."
 }

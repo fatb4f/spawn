@@ -61,7 +61,8 @@
           "$ref": "./evidence.bundle.telemetry.schema.json"
         }
       },
-      "additionalProperties": true
+      "additionalProperties": true,
+      "description": "Reference to the originating gate decision and telemetry context."
     },
     "notes": {
       "type": "array",
@@ -70,5 +71,6 @@
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Promotion decision that gates whether a run result can advance beyond review."
 }

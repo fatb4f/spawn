@@ -22,5 +22,6 @@
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Snapshot of accepted memory items derived from append-only memory events."
 }

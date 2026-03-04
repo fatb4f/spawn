@@ -61,5 +61,6 @@
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Decision emitted by gate evaluation before promotion and action execution."
 }

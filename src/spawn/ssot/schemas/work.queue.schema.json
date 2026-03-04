@@ -71,9 +71,11 @@
             "type": "string"
           }
         },
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Single work queue task specification."
       }
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "description": "Queue payload describing runnable tasks, dependencies, and execution budget hints."
 }
