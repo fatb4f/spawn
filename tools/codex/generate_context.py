@@ -58,13 +58,13 @@ def repo_dirty(path: Path) -> bool:
     return bool(out)
 
 
-def repo_commits(path: Path, max_commits: int) -> list[str]:
+def repo_commits(path: Path, max_commits: int, since_epoch: int | None = None) -> list[str]:
     out = run_git(
         [
             "log",
-            f"-{max_commits}",
+            f"-{max(10, max_commits * 5)}",
             "--date=short",
-            "--pretty=format:%h|%ad|%s",
+            "--pretty=format:%ct|%h|%ad|%s",
         ],
         path,
     )
@@ -72,11 +72,19 @@ def repo_commits(path: Path, max_commits: int) -> list[str]:
         return []
     rows: list[str] = []
     for line in out.splitlines():
-        parts = line.split("|", 2)
-        if len(parts) != 3:
+        parts = line.split("|", 3)
+        if len(parts) != 4:
             continue
-        h, d, s = parts
+        ct_raw, h, d, s = parts
+        try:
+            ct = int(ct_raw)
+        except ValueError:
+            continue
+        if since_epoch is not None and ct < since_epoch:
+            continue
         rows.append(f"{h} {d} {s}")
+        if len(rows) >= max_commits:
+            break
     return rows
 
 
@@ -128,46 +136,60 @@ def session_cwd(path: Path) -> str | None:
     return None
 
 
-def latest_session_file(sessions_root: Path, preferred_cwd: Path) -> Path | None:
+def latest_session_file(
+    sessions_root: Path,
+    preferred_cwd: Path,
+    min_mtime_epoch: int | None = None,
+    max_cwd_probes: int = 40,
+) -> Path | None:
     if not sessions_root.exists():
         return None
-    latest_path: Path | None = None
-    latest_mtime = -1.0
-    preferred_path: Path | None = None
-    preferred_mtime = -1.0
+    candidates: list[tuple[float, Path]] = []
     preferred = str(preferred_cwd.resolve())
     for path in sessions_root.rglob("*.jsonl"):
         try:
             mtime = path.stat().st_mtime
         except OSError:
             continue
-        if mtime > latest_mtime:
-            latest_mtime = mtime
-            latest_path = path
+        if min_mtime_epoch is not None and mtime < min_mtime_epoch:
+            continue
+        candidates.append((mtime, path))
+    if not candidates:
+        return None
+
+    candidates.sort(key=lambda item: item[0], reverse=True)
+    latest_path = candidates[0][1]
+    for _, path in candidates[: max(1, max_cwd_probes)]:
         cwd = session_cwd(path)
-        if cwd == preferred and mtime > preferred_mtime:
-            preferred_mtime = mtime
-            preferred_path = path
-    return preferred_path or latest_path
+        if cwd == preferred:
+            return path
+    return latest_path
 
 
-def build_repo_info(path: Path, max_commits: int) -> RepoInfo | None:
+def build_repo_info(
+    path: Path, max_commits: int, since_epoch: int | None = None
+) -> RepoInfo | None:
     if not path.exists() or not path.is_dir():
         return None
     if not is_git_repo(path):
         return None
+    epoch = repo_epoch(path)
     return RepoInfo(
         name=path.name,
         path=path,
-        epoch=repo_epoch(path),
+        epoch=epoch,
         branch=repo_branch(path),
         dirty=repo_dirty(path),
-        commits=repo_commits(path, max_commits=max_commits),
+        commits=repo_commits(path, max_commits=max_commits, since_epoch=since_epoch),
     )
 
 
 def format_output(
-    repos: list[RepoInfo], prjroot: Path, sessions_root: Path, session_file: Path | None
+    repos: list[RepoInfo],
+    prjroot: Path,
+    sessions_root: Path,
+    session_file: Path | None,
+    lookback_hours: int,
 ) -> str:
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     lines: list[str] = []
@@ -177,6 +199,7 @@ def format_output(
     lines.append(f"generated_at: {now}")
     lines.append(f"prjroot: {prjroot}")
     lines.append(f"sessions_root: {sessions_root}")
+    lines.append(f"lookback_hours: {lookback_hours}")
     lines.append(f"repo_count: {len(repos)}")
     lines.append("---")
     lines.append("")
@@ -231,6 +254,16 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--max-repos", type=int, default=8)
     parser.add_argument("--max-commits", type=int, default=5)
+    parser.add_argument(
+        "--max-session-cwd-probes",
+        type=int,
+        default=int(os.environ.get("CODEX_CONTEXT_MAX_SESSION_CWD_PROBES", "40")),
+    )
+    parser.add_argument(
+        "--lookback-hours",
+        type=int,
+        default=int(os.environ.get("CODEX_CONTEXT_LOOKBACK_HOURS", "72")),
+    )
     return parser.parse_args()
 
 
@@ -239,6 +272,9 @@ def main() -> int:
     prjroot = Path(args.prjroot).expanduser().resolve()
     sessions_root = Path(args.sessions_root).expanduser().resolve()
     output = Path(args.output).expanduser().resolve()
+    lookback_hours = max(0, int(args.lookback_hours))
+    now_epoch = int(dt.datetime.now(dt.timezone.utc).timestamp())
+    since_epoch = now_epoch - (lookback_hours * 3600) if lookback_hours > 0 else None
 
     candidates: dict[Path, str] = {}
     for raw in args.project:
@@ -253,16 +289,27 @@ def main() -> int:
 
     repos: list[RepoInfo] = []
     for path in candidates:
-        info = build_repo_info(path, max_commits=args.max_commits)
+        info = build_repo_info(path, max_commits=args.max_commits, since_epoch=since_epoch)
         if info is not None:
+            if since_epoch is not None and not info.dirty and info.epoch < since_epoch:
+                continue
             repos.append(info)
 
     repos.sort(key=lambda r: r.epoch, reverse=True)
     repos = repos[: max(1, args.max_repos)]
 
-    session_file = latest_session_file(sessions_root, preferred_cwd=prjroot)
+    session_file = latest_session_file(
+        sessions_root,
+        preferred_cwd=prjroot,
+        min_mtime_epoch=since_epoch,
+        max_cwd_probes=max(1, int(args.max_session_cwd_probes)),
+    )
     content = format_output(
-        repos=repos, prjroot=prjroot, sessions_root=sessions_root, session_file=session_file
+        repos=repos,
+        prjroot=prjroot,
+        sessions_root=sessions_root,
+        session_file=session_file,
+        lookback_hours=lookback_hours,
     )
     write_atomic(output, content)
     print(output)
