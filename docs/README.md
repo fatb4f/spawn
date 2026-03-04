@@ -8,3 +8,4 @@ Shared cross-repo docs are maintained in `fabric-docs`.
 - `TOOL_ARCHITECTURE_AND_DEPENDENCIES.md`: architecture boundaries, dependency policy, and SSOT schema references.
 - `memory/README.md`: high-level overview of the memory capability and operator interface.
 - `api/README.md`: generated OpenAPI + JSON Schema documentation index.
+- `telemetry/README.md`: codex telemetry-forwarding baseline scope, asset matrix, and gap analysis.
