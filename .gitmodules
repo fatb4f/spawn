@@ -1,0 +1,3 @@
+[submodule "dome"]
+	path = dome
+	url = https://github.com/fatb4f/dome.git
