@@ -1,0 +1,93 @@
+{
+  "kind": "state_space.docs.review.v1",
+  "source_dir": "/home/_404/src/discussions/state_space.docs",
+  "authority_target": "/home/_404/src/discussions/state_space",
+  "normalized_architecture": {
+    "ordered_layers": [
+      "source_space",
+      "transform_space",
+      "state_space",
+      "dependency_graph",
+      "policy_input",
+      "policy_decision",
+      "enforcement",
+      "governance_projection"
+    ],
+    "principles": [
+      "source observations are durable truth",
+      "transforms are named and versioned",
+      "state_space is admitted projection, not raw runtime mirror",
+      "policy input must be compact and hot-path safe",
+      "otel is transport boundary, not cache authority",
+      "governance projections are downstream of runtime contracts"
+    ]
+  },
+  "documents": [
+    {
+      "path": "output_4.md",
+      "signal": "highest",
+      "role": "core-model",
+      "keep": true,
+      "reason": "Defines the cleanest modeling split and transform taxonomy."
+    },
+    {
+      "path": "output_5.md",
+      "signal": "highest",
+      "role": "policy-gate",
+      "keep": true,
+      "reason": "Defines the correct daemon-policy-executor boundary and compact policy input."
+    },
+    {
+      "path": "output_3.md",
+      "signal": "high",
+      "role": "telemetry-transport",
+      "keep": true,
+      "reason": "Places OTel correctly as transport and structured event boundary."
+    },
+    {
+      "path": "output_2.md",
+      "signal": "high",
+      "role": "snapshot-cache",
+      "keep": true,
+      "reason": "Pins DTO, cursor, consistency, and hot-cache semantics."
+    },
+    {
+      "path": "output_6.md",
+      "signal": "medium-high",
+      "role": "governance-adapter",
+      "keep": true,
+      "reason": "Useful as a later adapter/projection layer, not runtime authority."
+    },
+    {
+      "path": "output_7.md",
+      "signal": "medium",
+      "role": "runtime-guardrails",
+      "keep": true,
+      "reason": "Good control catalog, but downstream of core contract work."
+    },
+    {
+      "path": "output_1.md",
+      "signal": "low",
+      "role": "tooling-taxonomy",
+      "keep": false,
+      "reason": "Not needed for current state-space contract definition."
+    }
+  ],
+  "phase_focus": {
+    "phase_1": [
+      "observed.source.record",
+      "transform.spec",
+      "live_state_event",
+      "policy.input",
+      "policy.decision",
+      "dependency.graph"
+    ],
+    "phase_2": [
+      "runtime.guardrail.profile",
+      "oscal.adapter.view"
+    ],
+    "defer": [
+      "tooling taxonomy and DSPy alignment"
+    ]
+  }
+}

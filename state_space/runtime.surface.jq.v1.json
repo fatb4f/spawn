@@ -1,0 +1,50 @@
+{
+  "schema_name": "runtime.surface",
+  "schema_version": "v1",
+  "surface_id": "jq",
+  "owner": "ops",
+  "managed_kind": "binary",
+  "binary": "/usr/bin/jq",
+  "entrypoints": [
+    {
+      "kind": "cli",
+      "value": "jq"
+    }
+  ],
+  "launch_surfaces": [
+    {
+      "kind": "shell",
+      "value": "direct CLI invocation"
+    }
+  ],
+  "xdg_dirs": {
+    "config": null,
+    "state": null,
+    "cache": null,
+    "data": null,
+    "runtime": null
+  },
+  "owned_paths": [],
+  "writable_paths": [],
+  "env_contract": {
+    "required": [],
+    "set": {},
+    "optional": []
+  },
+  "systemd_units": [],
+  "credentials": [],
+  "ipc": [],
+  "ports_or_sockets": [],
+  "verification_rules": [
+    {
+      "kind": "binary-available",
+      "command": "command -v /usr/bin/jq",
+      "expected": "exit 0"
+    }
+  ],
+  "render_targets": [],
+  "config_artifacts": [],
+  "notes": [
+    "This example demonstrates that a managed runtime surface can be schema-bound even with no file-declared settings."
+  ]
+}

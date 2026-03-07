@@ -1,0 +1,828 @@
+{
+  "kind": "state_space.proposal_register.v1",
+  "generated_at_utc": "2026-03-07T01:44:25.135133Z",
+  "source": "discussions/state_space/architecture.decisions.v1.json",
+  "gate_policy": {
+    "rule": "FAIL if any required field missing/empty OR status != defined OR underspecified not empty",
+    "required_fields": [
+      "id",
+      "title",
+      "plane",
+      "owner",
+      "owning_process",
+      "execution",
+      "inputs",
+      "outputs",
+      "contracts",
+      "evidence_artifacts",
+      "failure_policy",
+      "should_be_skill",
+      "status"
+    ]
+  },
+  "proposals": [
+    {
+      "id": "SS-001",
+      "title": "Local Snapshot Authority",
+      "plane": [
+        "control"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-build.service",
+      "execution": {
+        "mode": "service+timer",
+        "transport": "pull",
+        "trigger": [
+          "periodic",
+          "post-change"
+        ],
+        "entrypoint": "spawn state-space build|update"
+      },
+      "inputs": [
+        "live_state_cache",
+        "declared_specs",
+        "corrective_probes"
+      ],
+      "outputs": [
+        "state_space_snapshot"
+      ],
+      "contracts": [
+        "state.space.schema.json"
+      ],
+      "evidence_artifacts": [
+        "snapshot_id",
+        "snapshot_hash",
+        "build_log"
+      ],
+      "failure_policy": "UNKNOWN gate on stale/missing authoritative snapshot",
+      "should_be_skill": {
+        "value": true,
+        "skill": "state-space",
+        "ops": [
+          "build",
+          "update"
+        ]
+      },
+      "status": "defined",
+      "underspecified": [],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "PASS"
+    },
+    {
+      "id": "SS-002",
+      "title": "Canonical Ingress (Direct/Enrich)",
+      "plane": [
+        "data",
+        "observability"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-ingest@.service",
+      "execution": {
+        "mode": "service",
+        "transport": "push",
+        "trigger": [
+          ".path",
+          ".socket",
+          ".service"
+        ],
+        "entrypoint": "event trigger -> direct|enrich -> canonical_event"
+      },
+      "inputs": [
+        "system events",
+        "collector outputs"
+      ],
+      "outputs": [
+        "live_state_event"
+      ],
+      "contracts": [
+        "live_state_event.schema.json"
+      ],
+      "evidence_artifacts": [
+        "ingest_log",
+        "event_idempotency_key",
+        "evidence_ref"
+      ],
+      "failure_policy": "reject invalid events at write boundary",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "collector catalog not pinned",
+        "source-specific trigger map incomplete"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-003",
+      "title": "Live State Hot Cache Reducer",
+      "plane": [
+        "data"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-reducer.service",
+      "execution": {
+        "mode": "service",
+        "transport": "push",
+        "trigger": [
+          "new ledger event"
+        ],
+        "entrypoint": "reduce live_state_event -> live_state_cache"
+      },
+      "inputs": [
+        "live_state_event ledger"
+      ],
+      "outputs": [
+        "live_state_cache"
+      ],
+      "contracts": [
+        "live_state_cache.schema.json"
+      ],
+      "evidence_artifacts": [
+        "reducer_cursor",
+        "watermark",
+        "reducer_log"
+      ],
+      "failure_policy": "pause mutation and mark cache stale on reducer errors",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "cache eviction/TTL policy undefined",
+        "cold-start recovery policy undefined"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-004",
+      "title": "Immutable Snapshot Publish",
+      "plane": [
+        "data",
+        "governance"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-publish.service",
+      "execution": {
+        "mode": "service",
+        "transport": "pull",
+        "trigger": [
+          "timer build completion",
+          "manual refresh"
+        ],
+        "entrypoint": "publish snapshot + hash-chain"
+      },
+      "inputs": [
+        "live_state_cache",
+        "corrective_probe_results"
+      ],
+      "outputs": [
+        "state_space_snapshot",
+        "snapshot_chain"
+      ],
+      "contracts": [
+        "state.space.schema.json",
+        "snapshot.chain.schema.json"
+      ],
+      "evidence_artifacts": [
+        "snapshot_id",
+        "prev_hash",
+        "snapshot_hash"
+      ],
+      "failure_policy": "abort publish if chain integrity fails",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "signature/key management undefined"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-005",
+      "title": "Dependency Graph Derivation",
+      "plane": [
+        "data",
+        "control"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-graph.service",
+      "execution": {
+        "mode": "service",
+        "transport": "pull",
+        "trigger": [
+          "timer build",
+          "post-change"
+        ],
+        "entrypoint": "merge declared/live/journal/inferred graph passes"
+      },
+      "inputs": [
+        "declared graph",
+        "live probes",
+        "journal overlay",
+        "inference hints"
+      ],
+      "outputs": [
+        "dependency_graph"
+      ],
+      "contracts": [
+        "dependency.graph.schema.json"
+      ],
+      "evidence_artifacts": [
+        "graph_build_log",
+        "edge_provenance",
+        "confidence_summary"
+      ],
+      "failure_policy": "drop inferred-only edges below confidence threshold",
+      "should_be_skill": {
+        "value": true,
+        "skill": "state-space",
+        "ops": [
+          "build"
+        ]
+      },
+      "status": "partial",
+      "underspecified": [
+        "schema module set not finalized",
+        "inference confidence policy incomplete"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-006",
+      "title": "Delta + Next Actions",
+      "plane": [
+        "control"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-diff.service",
+      "execution": {
+        "mode": "service",
+        "transport": "pull",
+        "trigger": [
+          "new snapshot"
+        ],
+        "entrypoint": "diff prev/current snapshot -> state_delta + next_actions"
+      },
+      "inputs": [
+        "previous_snapshot",
+        "current_snapshot"
+      ],
+      "outputs": [
+        "state_delta",
+        "next_actions"
+      ],
+      "contracts": [
+        "state.delta.schema.json",
+        "next.actions.schema.json"
+      ],
+      "evidence_artifacts": [
+        "delta_report",
+        "diff_metrics"
+      ],
+      "failure_policy": "emit UNKNOWN when baseline snapshot missing",
+      "should_be_skill": {
+        "value": true,
+        "skill": "state-space",
+        "ops": [
+          "update"
+        ]
+      },
+      "status": "partial",
+      "underspecified": [
+        "next_action taxonomy undefined"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-007",
+      "title": "Pre-Gate Policy Pipeline",
+      "plane": [
+        "control"
+      ],
+      "owner": "spawn+policy",
+      "owning_process": "spawn-state-gate.service",
+      "execution": {
+        "mode": "service",
+        "transport": "pull",
+        "trigger": [
+          "PLAN/IMPLEMENT gate request",
+          "CI verify"
+        ],
+        "entrypoint": "impact_facts -> OPA/Rego -> transition_decision"
+      },
+      "inputs": [
+        "proposed_change",
+        "dependency_graph",
+        "snapshot_id",
+        "policy_bundle_sha"
+      ],
+      "outputs": [
+        "transition_decision"
+      ],
+      "contracts": [
+        "state.transition.request.schema.json",
+        "state.transition.decision.schema.json"
+      ],
+      "evidence_artifacts": [
+        "impact_facts.json",
+        "decision.json",
+        "policy_bundle_sha"
+      ],
+      "failure_policy": "default UNKNOWN on policy/evidence errors",
+      "should_be_skill": {
+        "value": true,
+        "skill": "state-space",
+        "ops": [
+          "gate",
+          "verify"
+        ]
+      },
+      "status": "defined",
+      "underspecified": [],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "PASS"
+    },
+    {
+      "id": "SS-008",
+      "title": "Query/API Surface",
+      "plane": [
+        "query",
+        "control"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-api.service",
+      "execution": {
+        "mode": "service",
+        "transport": "pull",
+        "trigger": [
+          "on-demand API request"
+        ],
+        "entrypoint": "GraphQL/REST read/query for snapshots/graph/deltas"
+      },
+      "inputs": [
+        "snapshot store",
+        "graph store",
+        "decision artifacts"
+      ],
+      "outputs": [
+        "query results"
+      ],
+      "contracts": [
+        "state.query.api.schema.json"
+      ],
+      "evidence_artifacts": [
+        "query_audit_log"
+      ],
+      "failure_policy": "read-only fallback; no mutation endpoints",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "API versioning contract not pinned",
+        "pagination/filter semantics incomplete"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-009",
+      "title": "GitHub Secondary Enforcement",
+      "plane": [
+        "enforcement"
+      ],
+      "owner": "GitHub Actions",
+      "owning_process": "workflow runners",
+      "execution": {
+        "mode": "workflow",
+        "transport": "pull",
+        "trigger": [
+          "pull_request",
+          "schedule",
+          "workflow_dispatch"
+        ],
+        "entrypoint": "verify artifacts + run gate checks + publish checks"
+      },
+      "inputs": [
+        "published snapshots",
+        "decision artifacts",
+        "policy bundle"
+      ],
+      "outputs": [
+        "check-runs",
+        "gate reports"
+      ],
+      "contracts": [
+        "ci.gate.report.schema.json"
+      ],
+      "evidence_artifacts": [
+        "workflow logs",
+        "artifact refs",
+        "check-run IDs"
+      ],
+      "failure_policy": "block merge on INVALID or stale UNKNOWN",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "artifact naming/version policy undefined",
+        "branch protection mapping not formalized"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-010",
+      "title": "Cloud Worker Enrichment",
+      "plane": [
+        "integration",
+        "observability"
+      ],
+      "owner": "cloud workers",
+      "owning_process": "worker jobs",
+      "execution": {
+        "mode": "job",
+        "transport": "pull+push",
+        "trigger": [
+          "scheduled enrichment",
+          "manual backfill"
+        ],
+        "entrypoint": "heavy correlation/inference -> advisory evidence artifacts"
+      },
+      "inputs": [
+        "snapshot history",
+        "journal extracts"
+      ],
+      "outputs": [
+        "enrichment artifacts"
+      ],
+      "contracts": [
+        "state.enrichment.artifact.schema.json"
+      ],
+      "evidence_artifacts": [
+        "job run logs",
+        "enrichment refs"
+      ],
+      "failure_policy": "advisory-only output; no gate mutation authority",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "auth/egress/data-classification policy undefined"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-011",
+      "title": "Sweep->Spawn Snapshot Boundary",
+      "plane": [
+        "control"
+      ],
+      "owner": "sweep+spawn",
+      "owning_process": "sweep skill + spawnctl",
+      "execution": {
+        "mode": "script+cli",
+        "transport": "pull",
+        "trigger": [
+          "loop preflight",
+          "loop postflight"
+        ],
+        "entrypoint": "sweep requests authoritative snapshot from spawnctl"
+      },
+      "inputs": [
+        "loop phase context",
+        "snapshot query"
+      ],
+      "outputs": [
+        "sweep_ref",
+        "liveliness gates"
+      ],
+      "contracts": [
+        "sweep.snapshot.bridge.schema.json"
+      ],
+      "evidence_artifacts": [
+        "sweep packet refs",
+        "snapshot refs"
+      ],
+      "failure_policy": "fail sweep gate when snapshot unavailable/stale",
+      "should_be_skill": {
+        "value": true,
+        "skill": "sweep",
+        "ops": [
+          "preflight",
+          "postflight"
+        ]
+      },
+      "status": "partial",
+      "underspecified": [
+        "bridge interface contract not finalized"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-012",
+      "title": "Declared Runtime Surface Contract",
+      "plane": [
+        "control"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn-state-build.service",
+      "execution": {
+        "mode": "schema+render",
+        "transport": "pull",
+        "trigger": [
+          "spec change",
+          "snapshot build"
+        ],
+        "entrypoint": "load runtime_surface declarations -> validate -> aggregate into userland_spec"
+      },
+      "inputs": [
+        "runtime surface declarations",
+        "render target inventory"
+      ],
+      "outputs": [
+        "runtime_surface",
+        "userland_spec"
+      ],
+      "contracts": [
+        "runtime.surface.schema.json",
+        "userland.spec.schema.json"
+      ],
+      "evidence_artifacts": [
+        "runtime.surface.schema.json",
+        "runtime.surface.codex.v1.json",
+        "runtime.surface.cloudflared.v1.json",
+        "runtime.surface.jq.v1.json"
+      ],
+      "failure_policy": "INVALID when a managed surface lacks ownership, XDG, verification, or render target contract coverage",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "defined",
+      "underspecified": [],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "PASS"
+    }
+  ],
+  "summary": {
+    "total": 12,
+    "status_counts": {
+      "defined": 3,
+      "partial": 9
+    },
+    "gate_counts": {
+      "PASS": 3,
+      "FAIL": 9
+    },
+    "fail_ids": [
+      "SS-002",
+      "SS-003",
+      "SS-004",
+      "SS-005",
+      "SS-006",
+      "SS-008",
+      "SS-009",
+      "SS-010",
+      "SS-011"
+    ]
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "kind": "state_space.architecture_decisions.v1",
+  "generated_at_utc": "2026-03-07T01:44:25.135133Z",
+  "source": "discussions/state_space/stack_decisions_2026-03-06.md",
+  "decisions": [
+    {
+      "id": "AD-001",
+      "title": "Local Snapshot Authority",
+      "statement": "spawn is the authoritative local snapshot builder for state_space.",
+      "rationale": [
+        "Only local runtime can observe host-specific user/system state faithfully.",
+        "Gate decisions require deterministic host-local evidence."
+      ],
+      "implications": [
+        "Snapshot outputs are immutable artifacts keyed by snapshot_id.",
+        "Primary state-space generation does not move to GitHub-hosted runners."
+      ],
+      "owner": "spawn",
+      "status": "accepted",
+      "scope": "state_space build authority",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space/formal_state_space_spec_v0.json",
+        "discussions/state_space/proposal_register.v1.json"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-002",
+      "title": "Runtime Surface as Declared Ownership Primitive",
+      "statement": "runtime_surface is the authoritative declared contract for one managed app, service, binary, wrapper, or launcher.",
+      "rationale": [
+        "Runtime ownership must remain explicit even when no file-declared settings exist.",
+        "Config files, wrappers, units, and launchers are rendered outputs, not authority."
+      ],
+      "implications": [
+        "Every managed runtime surface is schema-bound.",
+        "userland_spec is an aggregate over runtime_surface[] rather than the base declared unit."
+      ],
+      "owner": "spawn",
+      "status": "accepted",
+      "scope": "declared userland model",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space/runtime.surface.schema.json",
+        "discussions/state_space/runtime.surface.codex.v1.json",
+        "discussions/state_space/runtime.surface.cloudflared.v1.json",
+        "discussions/state_space/runtime.surface.jq.v1.json"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-003",
+      "title": "GitHub as Secondary Enforcement Plane",
+      "statement": "GitHub workflows re-validate and enforce published artifacts, but do not become the primary state-space builder.",
+      "rationale": [
+        "Remote runners cannot observe local runtime truth with sufficient fidelity.",
+        "Artifact-based verification is useful downstream of local state generation."
+      ],
+      "implications": [
+        "CI blocks merges on INVALID or stale UNKNOWN outcomes.",
+        "CI consumes already-published artifacts rather than probing host state directly."
+      ],
+      "owner": "spawn+github",
+      "status": "accepted",
+      "scope": "verification and enforcement",
+      "adoption_phase": "phase_2",
+      "evidence_refs": [
+        "discussions/state_space/formal_state_space_spec_v0.json",
+        "discussions/state_space/proposal_register.v1.json"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-004",
+      "title": "Codex Excluded from Authoritative Build Path",
+      "statement": "codex-cli is not placed in the authoritative snapshot build path.",
+      "rationale": [
+        "It adds nondeterminism, auth/secrets burden, and external runtime failure modes to the gate path."
+      ],
+      "implications": [
+        "Codex may assist with advisory work, but not authoritative state assembly."
+      ],
+      "owner": "spawn",
+      "status": "accepted",
+      "scope": "authoritative build path",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space/stack_decisions_assessment.v1.json"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-005",
+      "title": "Query Then Policy",
+      "statement": "Impact/query computation derives deterministic facts first; OPA/Rego evaluates policy over those facts second.",
+      "rationale": [
+        "Separates fact derivation from policy decisions.",
+        "Keeps policy canonical in git and outside query text."
+      ],
+      "implications": [
+        "Gate output includes decision, reasons, snapshot_id, and policy_bundle_sha.",
+        "Policy input remains compact and structured."
+      ],
+      "owner": "spawn+policy",
+      "status": "accepted",
+      "scope": "gate pipeline",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space.docs/output_5.md",
+        "discussions/state_space/formal_state_space_spec_v0.json"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-006",
+      "title": "DuckDB First, Graph DB by Evidence",
+      "statement": "The initial graph/query stack is spawn + DuckDB + OPA sidecar; a graph database is adopted only with demonstrated need.",
+      "rationale": [
+        "Keeps the first implementation simpler and easier to audit.",
+        "Graph-specific adoption should be justified by traversal complexity or performance evidence."
+      ],
+      "implications": [
+        "Neo4j/Cypher remains conditional and later-phase.",
+        "SQL/CTE derivation is the baseline path."
+      ],
+      "owner": "spawn",
+      "status": "accepted",
+      "scope": "graph/query backend",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space.docs/high_signal_candidates.md",
+        "discussions/state_space/stack_decisions_2026-03-06.md"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-007",
+      "title": "Hash-Chained Snapshot Evidence",
+      "statement": "Snapshot artifacts use hash-chaining and optional signatures for tamper evidence.",
+      "rationale": [
+        "Provides auditability with lower operational complexity than a ledger/blockchain design."
+      ],
+      "implications": [
+        "Published snapshots carry prev_hash and integrity evidence."
+      ],
+      "owner": "spawn",
+      "status": "accepted",
+      "scope": "artifact integrity",
+      "adoption_phase": "phase_1.5",
+      "evidence_refs": [
+        "discussions/state_space/stack_decisions_2026-03-06.md"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-008",
+      "title": "Direct/Enrich Canonical Ingress",
+      "statement": "Userland live-state ingress uses a single canonical event contract with direct and enrich modes before reduction.",
+      "rationale": [
+        "Different triggers may or may not carry enough information to mutate state directly.",
+        "A single canonical event shape prevents pipeline divergence."
+      ],
+      "implications": [
+        "Both modes must emit the same live_state_event contract.",
+        "Schema validation occurs at the write boundary.",
+        "Events carry origin, evidence_ref, and idempotency metadata."
+      ],
+      "owner": "spawn",
+      "status": "accepted",
+      "scope": "state ingress",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space.docs/output_3.md",
+        "discussions/state_space/formal_state_space_spec_v0.json"
+      ],
+      "supersedes": []
+    }
+  ]
+}

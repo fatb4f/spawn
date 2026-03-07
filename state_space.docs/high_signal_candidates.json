@@ -1,0 +1,75 @@
+{
+  "kind": "state_space.candidate_inventory.v1",
+  "candidates": [
+    {
+      "name": "observed.source.record",
+      "priority": 1,
+      "phase": "phase_1",
+      "owner": "spawn",
+      "reason": "Foundational source envelope for dotfiles, unit facts, journal slices, and listener events."
+    },
+    {
+      "name": "transform.spec",
+      "priority": 2,
+      "phase": "phase_1",
+      "owner": "spawn",
+      "reason": "Missing middle layer between durable observations and admitted state."
+    },
+    {
+      "name": "live_state_event",
+      "priority": 3,
+      "phase": "phase_1",
+      "owner": "spawn",
+      "reason": "Canonical direct/enrich event contract for reducer and hot-cache updates."
+    },
+    {
+      "name": "policy.input",
+      "priority": 4,
+      "phase": "phase_1",
+      "owner": "spawn+policy",
+      "reason": "Hot-path admission request must be compact, deterministic, and schema-bound."
+    },
+    {
+      "name": "policy.decision",
+      "priority": 5,
+      "phase": "phase_1",
+      "owner": "spawn+policy",
+      "reason": "Gate result contract for allow/deny/require_approval/unknown with reasons and evidence."
+    },
+    {
+      "name": "dependency.graph",
+      "priority": 6,
+      "phase": "phase_1",
+      "owner": "spawn",
+      "reason": "Core relation model for impact and transition gating."
+    },
+    {
+      "name": "snapshot.meta",
+      "priority": 7,
+      "phase": "phase_1.5",
+      "owner": "spawn",
+      "reason": "Capture bounds, boot identity, freshness, and consistency semantics should be explicitly reusable."
+    },
+    {
+      "name": "state_space_snapshot",
+      "priority": 8,
+      "phase": "phase_1.5",
+      "owner": "spawn",
+      "reason": "Admitted projection contract once source, transform, and event shapes are pinned."
+    },
+    {
+      "name": "runtime.guardrail.profile",
+      "priority": 9,
+      "phase": "phase_2",
+      "owner": "spawn+systemd",
+      "reason": "Declarative execution hardening profile for runtime surfaces."
+    },
+    {
+      "name": "oscal.adapter.view",
+      "priority": 10,
+      "phase": "phase_2",
+      "owner": "spawn+governance",
+      "reason": "Compliance and interoperability projection, not a primary runtime contract."
+    }
+  ]
+}
