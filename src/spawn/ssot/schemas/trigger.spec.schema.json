@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "trigger.spec.schema.json",
+  "title": "trigger.spec",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "trigger_id",
+    "trigger_kind",
+    "source_event",
+    "handler",
+    "execution_mode"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "trigger.spec"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "trigger_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "trigger_kind": {
+      "type": "string",
+      "enum": [
+        "timer",
+        "path",
+        "socket",
+        "hook",
+        "manual",
+        "resume",
+        "session"
+      ]
+    },
+    "source_event": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cadence_or_edge": {
+      "type": "string"
+    },
+    "handler": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": [
+        "oneshot",
+        "service",
+        "timer+service",
+        "path+service",
+        "socket+service"
+      ]
+    },
+    "debounce_policy": {
+      "type": "string"
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false,
+  "description": "Canonical trigger descriptor for systemd- and hook-driven execution."
+}

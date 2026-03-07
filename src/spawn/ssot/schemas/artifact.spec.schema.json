@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "artifact.spec.schema.json",
+  "title": "artifact.spec",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "artifact_id",
+    "path",
+    "format",
+    "purpose",
+    "authority_level"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "artifact.spec"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "artifact_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "json",
+        "jsonl",
+        "md",
+        "yaml",
+        "toml",
+        "txt",
+        "other"
+      ]
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "producer": {
+      "type": "string"
+    },
+    "consumer": {
+      "type": "string"
+    },
+    "authority_level": {
+      "type": "string",
+      "enum": [
+        "authoritative",
+        "derived",
+        "candidate"
+      ]
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "default": []
+    }
+  },
+  "additionalProperties": false,
+  "description": "Canonical artifact descriptor for persisted outputs and reports."
+}

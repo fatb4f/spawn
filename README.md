@@ -64,6 +64,8 @@ Package source lives under `src/spawn/`.
   - `spawnctl ssot validate-file event.envelope /path/to/event.json`
 - Validate stdin JSON:
   - `cat payload.json | spawnctl ssot validate-json event.envelope`
+- Extract Codex-derived seed catalog:
+  - `spawnctl ssot extract-codex-seeds`
 
 ## Memory V0 commands
 - Ingest codex session deltas:
@@ -107,6 +109,8 @@ Proto contract:
 ## Validation and replay tests
 - golden replay determinism:
   - `uv run python tests/golden_memory_replay.py`
+- seed catalog smoke test:
+  - `uv run python tests/seed_catalog_smoke.py`
 
 Canonical contract inputs:
 - `api/proto/spawn/v1/spawn_control.proto`

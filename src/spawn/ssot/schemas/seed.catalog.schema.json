@@ -1,0 +1,144 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "seed.catalog.schema.json",
+  "title": "seed.catalog",
+  "type": "object",
+  "required": [
+    "schema_name",
+    "schema_version",
+    "generated_at_utc",
+    "source_kind",
+    "inputs",
+    "stats",
+    "seed_candidates"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "seed.catalog"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "generated_at_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "source_kind": {
+      "const": "codex"
+    },
+    "inputs": {
+      "type": "object",
+      "required": [
+        "history_path",
+        "sessions_root",
+        "generated_context_path",
+        "cache_present"
+      ],
+      "properties": {
+        "history_path": {
+          "type": "string"
+        },
+        "sessions_root": {
+          "type": "string"
+        },
+        "generated_context_path": {
+          "type": "string"
+        },
+        "cache_present": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "stats": {
+      "type": "object",
+      "required": [
+        "raw_messages",
+        "unique_messages"
+      ],
+      "properties": {
+        "raw_messages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unique_messages": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "seed_candidates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "target_schema_name",
+          "why_structurable",
+          "candidate_fields",
+          "hit_count",
+          "sample_evidence"
+        ],
+        "properties": {
+          "target_schema_name": {
+            "type": "string",
+            "enum": [
+              "artifact.spec",
+              "schema.contract",
+              "trigger.spec"
+            ]
+          },
+          "why_structurable": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidate_fields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "hit_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sample_evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "timestamp",
+                "source",
+                "ref",
+                "excerpt"
+              ],
+              "properties": {
+                "timestamp": {
+                  "type": "string"
+                },
+                "source": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "excerpt": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "description": "Derived seed-candidate catalog summarizing recurring structured representations found in Codex stores."
+}

@@ -63,6 +63,30 @@
       "canonical": true
     },
     {
+      "name": "artifact.spec",
+      "version": "v1",
+      "file": "artifact.spec.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "schema.contract",
+      "version": "v1",
+      "file": "schema.contract.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "trigger.spec",
+      "version": "v1",
+      "file": "trigger.spec.schema.json",
+      "canonical": true
+    },
+    {
+      "name": "seed.catalog",
+      "version": "v1",
+      "file": "seed.catalog.schema.json",
+      "canonical": true
+    },
+    {
       "name": "memory",
       "version": "v1",
       "file": "memory.schema.json",
