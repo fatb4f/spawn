@@ -38,7 +38,7 @@ def main() -> int:
                 "ts": 1772800000,
                 "text": (
                     "Generate context.json and report.md under "
-                    "/home/_404/src/discussions/state_space"
+                    "/home/_404/src/proposal_register/state_space"
                 ),
             },
             {
