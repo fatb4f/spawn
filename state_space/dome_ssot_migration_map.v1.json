@@ -1,0 +1,161 @@
+{
+  "schema_name": "dome_ssot_migration_map",
+  "schema_version": "1.0.0",
+  "generated_at": "2026-03-07T02:58:45Z",
+  "authority": {
+    "authoritative_ssot_root": "src/spawn/ssot/schemas",
+    "reference_only_root": "dome/ssot",
+    "migration_packet_root": "spawn/state_space"
+  },
+  "problem_set": [
+    "The active authoritative SSOT must be declared.",
+    "state_space contracts and selected legacy dome concepts must be integrated into the active SSOT without reviving split authority.",
+    "dome remains reference-only input for selective migration."
+  ],
+  "classification_enum": [
+    "migrate_now",
+    "adapt_later",
+    "reference_only",
+    "already_absorbed"
+  ],
+  "entries": [
+    {
+      "source": "dome/ssot/schemas/control.event.schema.json",
+      "classification": "adapt_later",
+      "target": "src/spawn/ssot/schemas/control.event.schema.json",
+      "reason": "Useful only if a first-class control-plane event taxonomy is needed beyond event.envelope."
+    },
+    {
+      "source": "dome/ssot/schemas/control.strategies.schema.json",
+      "classification": "reference_only",
+      "target": null,
+      "reason": "Belongs to older orchestration strategy surface, not current spawn runtime."
+    },
+    {
+      "source": "dome/ssot/schemas/demo.pre_contract.schema.json",
+      "classification": "reference_only",
+      "target": null,
+      "reason": "Demo contract, not part of active runtime or state_space authority."
+    },
+    {
+      "source": "dome/ssot/schemas/event.envelope.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/event.envelope.schema.json",
+      "reason": "Canonical envelope already exists in active spawn SSOT."
+    },
+    {
+      "source": "dome/ssot/schemas/evidence.bundle.telemetry.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/evidence.bundle.telemetry.schema.json",
+      "reason": "Telemetry evidence bundle already exists in active spawn SSOT."
+    },
+    {
+      "source": "dome/ssot/schemas/evidence.capsule.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/evidence.capsule.schema.json",
+      "reason": "Artifact evidence capsule already exists in active spawn SSOT."
+    },
+    {
+      "source": "dome/ssot/schemas/gate.decision.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/gate.decision.schema.json",
+      "reason": "Gate decision already exists; future work is field-level enrichment, not migration."
+    },
+    {
+      "source": "dome/ssot/schemas/orchestrator.secure_defaults.schema.json",
+      "classification": "migrate_now",
+      "target": "src/spawn/ssot/schemas/runtime.guardrail.profile.schema.json",
+      "reason": "High-signal execution guardrail defaults are directly useful to active spawn runtime governance."
+    },
+    {
+      "source": "dome/ssot/schemas/pattern.catalog.schema.json",
+      "classification": "reference_only",
+      "target": null,
+      "reason": "Pattern catalog remains useful background material, but it is not active SSOT."
+    },
+    {
+      "source": "dome/ssot/schemas/plant.spec.schema.json",
+      "classification": "reference_only",
+      "target": null,
+      "reason": "Legacy orchestration artifact, not part of current spawn surface."
+    },
+    {
+      "source": "dome/ssot/schemas/profile.catalog.map.schema.json",
+      "classification": "adapt_later",
+      "target": "src/spawn/ssot/schemas/profile.catalog.map.schema.json",
+      "reason": "Only needed once runtime profile selection becomes active again."
+    },
+    {
+      "source": "dome/ssot/schemas/promotion.decision.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/promotion.decision.schema.json",
+      "reason": "Promotion decision already exists in active spawn SSOT."
+    },
+    {
+      "source": "dome/ssot/schemas/rank.policy.schema.json",
+      "classification": "adapt_later",
+      "target": "src/spawn/ssot/schemas/rank.policy.schema.json",
+      "reason": "Useful when ranking or model-selection policy becomes active."
+    },
+    {
+      "source": "dome/ssot/schemas/reason.codes.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/reason.codes.schema.json",
+      "reason": "Reason-code taxonomy already exists in active spawn SSOT."
+    },
+    {
+      "source": "dome/ssot/schemas/run.manifest.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/run.manifest.schema.json",
+      "reason": "Run manifest already exists in active spawn SSOT."
+    },
+    {
+      "source": "dome/ssot/schemas/runtime.config.schema.json",
+      "classification": "adapt_later",
+      "target": "src/spawn/ssot/schemas/runtime.config.schema.json",
+      "reason": "Defer until runtime profile-driven config becomes authoritative."
+    },
+    {
+      "source": "dome/ssot/schemas/spawn.spec.schema.json",
+      "classification": "reference_only",
+      "target": null,
+      "reason": "Historical spawn design artifact; not part of the current active stack."
+    },
+    {
+      "source": "dome/ssot/schemas/state.space.schema.json",
+      "classification": "adapt_later",
+      "target": "src/spawn/ssot/schemas/state.space.schema.json",
+      "reason": "Selective enrichment is useful, especially telemetry/gate-aware work_items; do not wholesale replace active schema."
+    },
+    {
+      "source": "dome/ssot/schemas/task.result.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/task.result.schema.json",
+      "reason": "Task result already exists and active spawn is richer in some areas."
+    },
+    {
+      "source": "dome/ssot/schemas/tool.manifest.schema.json",
+      "classification": "adapt_later",
+      "target": "src/spawn/ssot/schemas/tool.manifest.schema.json",
+      "reason": "Useful only if tools become first-class schema-governed execution units in active spawn."
+    },
+    {
+      "source": "dome/ssot/schemas/work.queue.schema.json",
+      "classification": "already_absorbed",
+      "target": "src/spawn/ssot/schemas/work.queue.schema.json",
+      "reason": "Work queue already exists and contains current spawn-specific fields."
+    },
+    {
+      "source": "dome/ssot/pins/xtrlv2/guardrails_bundle.schema.json",
+      "classification": "migrate_now",
+      "target": "src/spawn/ssot/schemas/guardrails.bundle.schema.json",
+      "reason": "Highest-signal legacy guardrail contract; migrate conceptually, not as a direct copy, and normalize to current spawn vocabulary."
+    }
+  ],
+  "summary": {
+    "migrate_now": 2,
+    "adapt_later": 6,
+    "reference_only": 5,
+    "already_absorbed": 9
+  }
+}
