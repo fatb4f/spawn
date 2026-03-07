@@ -1,6 +1,6 @@
 {
   "kind": "state_space.proposal_register.v1",
-  "generated_at_utc": "2026-03-07T01:44:25.135133Z",
+  "generated_at_utc": "2026-03-07T19:10:49Z",
   "source": "discussions/state_space/architecture.decisions.v1.json",
   "gate_policy": {
     "rule": "FAIL if any required field missing/empty OR status != defined OR underspecified not empty",
@@ -801,17 +801,165 @@
         "is_complete": true
       },
       "gate": "PASS"
+    },
+    {
+      "id": "SS-013",
+      "title": "Spawn Transition Actuation and GitHub Projection",
+      "plane": [
+        "control",
+        "integration"
+      ],
+      "owner": "spawn+github",
+      "owning_process": "spawn eventing subsystem + loop packet lifecycle",
+      "execution": {
+        "mode": "daemon+packet+api-wrapper+oneshot",
+        "transport": "pull+push",
+        "trigger": [
+          "plan emitted",
+          "submit intent",
+          "GitHub issue label state change",
+          "implement completion"
+        ],
+        "entrypoint": "spawn reconciles signals from local artifacts and GitHub labels, dispatches actuation, and updates loop-consumable local FSM state"
+      },
+      "inputs": [
+        "plan.json",
+        "GitHub issue/project state",
+        "transition events",
+        "implement results"
+      ],
+      "outputs": [
+        "loop.state.json",
+        "transition.events.jsonl",
+        "gate.state.json",
+        "github.binding.json"
+      ],
+      "contracts": [
+        "loop.lifecycle.model.v1.json",
+        "plan.state.schema.json",
+        "gate.state.schema.json"
+      ],
+      "evidence_artifacts": [
+        "discussions/state_space/loop.lifecycle.model.v1.json",
+        "discussions/state_space/loop.phase_transition_dag.v1.json",
+        "discussions/state_space/loop.fsm.schema.json",
+        "discussions/state_space/spawn.eventing.model.v1.json"
+      ],
+      "failure_policy": "FAIL when spawn eventing ownership, signal persistence, issue-label semantics, or actuator contract remain ambiguous",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "plan/gate state schemas not yet defined",
+        "systemd oneshot/transient actuator unit shape/name not pinned",
+        "GitHub issue-label lifecycle semantics not pinned",
+        "normalized signal.event schema and persistence location not yet defined"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
+    },
+    {
+      "id": "SS-014",
+      "title": "Spawn Eventing Model and Local Raw Signal Substrate",
+      "plane": [
+        "control",
+        "integration",
+        "observability"
+      ],
+      "owner": "spawn",
+      "owning_process": "spawn eventing subsystem",
+      "execution": {
+        "mode": "daemon+systemd.path+oneshot",
+        "transport": "pull+push",
+        "trigger": [
+          "artifact write under $wt",
+          "git hook ingress",
+          "GitHub issue label change",
+          "workflow result"
+        ],
+        "entrypoint": "systemd.path and API wrappers feed raw observations to spawn, which normalizes them and dispatches actuation"
+      },
+      "inputs": [
+        "raw local artifact observations",
+        "GitHub label state",
+        "workflow outcomes",
+        "git hook signals"
+      ],
+      "outputs": [
+        "normalized signal events",
+        "local FSM updates",
+        "actuation dispatch requests"
+      ],
+      "contracts": [
+        "spawn.eventing.model.v1.json",
+        "signal.event.schema.json"
+      ],
+      "evidence_artifacts": [
+        "discussions/state_space/spawn.eventing.model.v1.json",
+        "discussions/state_space/spawn.event.matrix.v1.json"
+      ],
+      "failure_policy": "FAIL when raw-signal substrate, normalization semantics, or event persistence remain undefined",
+      "should_be_skill": {
+        "value": false
+      },
+      "status": "partial",
+      "underspecified": [
+        "normalized signal.event schema not yet defined",
+        "signal persistence location not yet defined",
+        "systemd unit naming/template contract not yet defined"
+      ],
+      "completeness": {
+        "required_fields": [
+          "id",
+          "title",
+          "plane",
+          "owner",
+          "owning_process",
+          "execution",
+          "inputs",
+          "outputs",
+          "contracts",
+          "evidence_artifacts",
+          "failure_policy",
+          "should_be_skill",
+          "status"
+        ],
+        "missing_fields": [],
+        "empty_fields": [],
+        "is_complete": true
+      },
+      "gate": "FAIL"
     }
   ],
   "summary": {
-    "total": 12,
+    "total": 14,
     "status_counts": {
       "defined": 3,
-      "partial": 9
+      "partial": 11
     },
     "gate_counts": {
       "PASS": 3,
-      "FAIL": 9
+      "FAIL": 11
     },
     "fail_ids": [
       "SS-002",
@@ -822,7 +970,9 @@
       "SS-008",
       "SS-009",
       "SS-010",
-      "SS-011"
+      "SS-011",
+      "SS-013",
+      "SS-014"
     ]
   }
 }

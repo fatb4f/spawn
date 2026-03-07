@@ -1,0 +1,355 @@
+{
+  "kind": "loop.phase_transition_dag.v1",
+  "generated_at_utc": "2026-03-07T19:08:43Z",
+  "description": "Phase-oriented DAG for LOOP. Phase skills are artifact emitters; signals bridge artifact readiness or remote approval into LOOP-controlled FSM transitions.",
+  "nodes": [
+    {
+      "id": "INIT",
+      "skill": "loop",
+      "role": "initialize the run packet and worktree cache",
+      "entry_conditions": [
+        "objective present",
+        "repo_root present",
+        "worktree_base present"
+      ],
+      "reads": [
+        "objective",
+        "repo_root",
+        "worktree_base",
+        "parent_issue?"
+      ],
+      "writes": [
+        "$wt/LOOP/packet.meta.json",
+        "$wt/LOOP/LOOP.md",
+        "$wt/LOOP/loop.state.json"
+      ],
+      "exit_artifacts": [
+        "$wt/LOOP/packet.meta.json"
+      ],
+      "exit_condition": "loop packet validates and $wt is available",
+      "fileops": [
+        "mkdir $wt",
+        "write packet metadata",
+        "write initial loop state"
+      ],
+      "emits_signals": [
+        "init_completed"
+      ]
+    },
+    {
+      "id": "SWEEP_PREFLIGHT",
+      "skill": "sweep",
+      "role": "capture pre-change baseline and liveliness evidence",
+      "entry_conditions": [
+        "init_completed observed"
+      ],
+      "reads": [
+        "$wt/LOOP/packet.meta.json",
+        "live host runtime",
+        "repo git state",
+        "dotfiles sync state"
+      ],
+      "writes": [
+        "$wt/SWEEP/preflight/*"
+      ],
+      "exit_artifacts": [
+        "$wt/SWEEP/preflight/sweep.packet.json",
+        "$wt/SWEEP/preflight/liveliness.json"
+      ],
+      "exit_condition": "preflight sweep packet exists and liveliness gate resolved",
+      "fileops": [
+        "write preflight sweep packet",
+        "write liveliness summary"
+      ],
+      "emits_signals": [
+        "sweep_preflight_completed"
+      ]
+    },
+    {
+      "id": "PLAN",
+      "skill": "plan",
+      "role": "emit plan artifacts only",
+      "entry_conditions": [
+        "sweep_preflight_completed observed"
+      ],
+      "reads": [
+        "objective",
+        "problem_set",
+        "$wt/SWEEP/preflight/*"
+      ],
+      "writes": [
+        "$wt/PLAN/README.md",
+        "$wt/PLAN/plan.json"
+      ],
+      "exit_artifacts": [
+        "$wt/PLAN/plan.json"
+      ],
+      "exit_condition": "plan artifact validates and contains slice set",
+      "fileops": [
+        "write plan packet",
+        "write plan object"
+      ],
+      "emits_signals": [
+        "plan_emitted"
+      ]
+    },
+    {
+      "id": "DECISION",
+      "skill": "loop",
+      "role": "wait for and reconcile approval/rejection signals",
+      "entry_conditions": [
+        "plan_emitted observed"
+      ],
+      "reads": [
+        "$wt/PLAN/plan.json",
+        "GitHub issue/project state",
+        "approval workflow artifacts?"
+      ],
+      "writes": [
+        "$wt/PLAN/plan.state.json",
+        "$wt/GATE/gate.state.json",
+        "$wt/LOOP/github.binding.json"
+      ],
+      "exit_artifacts": [
+        "$wt/GATE/gate.state.json"
+      ],
+      "exit_condition": "approval or rejection is reconciled into local gate state",
+      "fileops": [
+        "write plan state projection",
+        "write gate state",
+        "write remote binding"
+      ],
+      "emits_signals": [
+        "approval_observed",
+        "rejection_observed"
+      ]
+    },
+    {
+      "id": "IMPLEMENT",
+      "skill": "implement",
+      "role": "consume approved plan and emit execution/evidence artifacts",
+      "entry_conditions": [
+        "approval_observed observed",
+        "gate.state == approved"
+      ],
+      "reads": [
+        "$wt/PLAN/plan.json",
+        "$wt/PLAN/plan.state.json",
+        "$wt/GATE/gate.state.json"
+      ],
+      "writes": [
+        "$wt/IMPLEMENT/IMPLEMENT.md",
+        "$wt/IMPLEMENT/packet.meta.json",
+        "$wt/IMPLEMENT/results.json"
+      ],
+      "exit_artifacts": [
+        "$wt/IMPLEMENT/results.json"
+      ],
+      "exit_condition": "execution results and evidence are materialized",
+      "fileops": [
+        "write implement packet",
+        "write execution metadata",
+        "write results/evidence refs"
+      ],
+      "emits_signals": [
+        "implement_completed"
+      ]
+    },
+    {
+      "id": "SWEEP_POSTFLIGHT",
+      "skill": "sweep",
+      "role": "capture post-change baseline and compute drift diff",
+      "entry_conditions": [
+        "implement_completed observed"
+      ],
+      "reads": [
+        "$wt/IMPLEMENT/results.json",
+        "live host runtime",
+        "$wt/SWEEP/preflight/*"
+      ],
+      "writes": [
+        "$wt/SWEEP/postflight/*"
+      ],
+      "exit_artifacts": [
+        "$wt/SWEEP/postflight/sweep.packet.json",
+        "$wt/SWEEP/postflight/sweep.diff.json"
+      ],
+      "exit_condition": "postflight packet and diff classification exist",
+      "fileops": [
+        "write postflight sweep packet",
+        "write pre/post diff"
+      ],
+      "emits_signals": [
+        "sweep_postflight_completed"
+      ]
+    },
+    {
+      "id": "VERIFY",
+      "skill": "loop",
+      "role": "classify evidence and drift for closeout eligibility",
+      "entry_conditions": [
+        "sweep_postflight_completed observed"
+      ],
+      "reads": [
+        "$wt/IMPLEMENT/results.json",
+        "$wt/SWEEP/postflight/sweep.diff.json"
+      ],
+      "writes": [
+        "$wt/LOOP/verification.state.json"
+      ],
+      "exit_artifacts": [
+        "$wt/LOOP/verification.state.json"
+      ],
+      "exit_condition": "verification decision is recorded",
+      "fileops": [
+        "write verification state"
+      ],
+      "emits_signals": [
+        "verification_passed",
+        "verification_failed"
+      ]
+    },
+    {
+      "id": "TERMINATE",
+      "skill": "loop",
+      "role": "archive artifacts, record closeout, and prune temporary worktree",
+      "entry_conditions": [
+        "verification_passed observed or explicit fail-close policy"
+      ],
+      "reads": [
+        "$wt/PLAN/*",
+        "$wt/IMPLEMENT/*",
+        "$wt/LOOP/*",
+        "$wt/SWEEP/*"
+      ],
+      "writes": [
+        "$wt/LOOP/closeout.state.json",
+        "outputs/reports/*"
+      ],
+      "exit_artifacts": [
+        "outputs/reports/*"
+      ],
+      "exit_condition": "reports archived and worktree cleanup classified",
+      "fileops": [
+        "archive reports",
+        "write closeout state",
+        "prune /tmp/$wt when allowed"
+      ],
+      "emits_signals": [
+        "terminate_completed"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "E1",
+      "from": "INIT",
+      "to": "SWEEP_PREFLIGHT",
+      "transition": "init_completed",
+      "purpose": "confirm loop packet exists and preflight may begin",
+      "signaler": "systemd.path + oneshot bridge",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "artifact_write",
+      "proof_artifact": "$wt/LOOP/packet.meta.json"
+    },
+    {
+      "id": "E2",
+      "from": "SWEEP_PREFLIGHT",
+      "to": "PLAN",
+      "transition": "sweep_preflight_completed",
+      "purpose": "make preflight evidence available for planning",
+      "signaler": "systemd.path + oneshot bridge",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "artifact_write",
+      "proof_artifact": "$wt/SWEEP/preflight/sweep.packet.json"
+    },
+    {
+      "id": "E3",
+      "from": "PLAN",
+      "to": "DECISION",
+      "transition": "plan_emitted",
+      "purpose": "announce that the plan artifact is ready for submission/review",
+      "signaler": "systemd.path + oneshot bridge",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "artifact_write",
+      "proof_artifact": "$wt/PLAN/plan.json"
+    },
+    {
+      "id": "E4",
+      "from": "DECISION",
+      "to": "IMPLEMENT",
+      "transition": "approval_observed",
+      "purpose": "unlock implementation after authoritative approval is observed",
+      "signaler": "direct API wrapper",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "github_state",
+      "proof_artifact": "$wt/GATE/gate.state.json",
+      "remote_indicator": "issue open + label state:approved"
+    },
+    {
+      "id": "E5",
+      "from": "DECISION",
+      "to": "PLAN",
+      "transition": "rejection_observed",
+      "purpose": "return to planning when proposal is rejected or needs revision",
+      "signaler": "direct API wrapper",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "github_state",
+      "proof_artifact": "$wt/GATE/gate.state.json",
+      "remote_indicator": "issue open + label state:rejected"
+    },
+    {
+      "id": "E6",
+      "from": "IMPLEMENT",
+      "to": "SWEEP_POSTFLIGHT",
+      "transition": "implement_completed",
+      "purpose": "start postflight verification after execution artifacts exist",
+      "signaler": "systemd.path + oneshot bridge",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "artifact_write",
+      "proof_artifact": "$wt/IMPLEMENT/results.json"
+    },
+    {
+      "id": "E7",
+      "from": "SWEEP_POSTFLIGHT",
+      "to": "VERIFY",
+      "transition": "sweep_postflight_completed",
+      "purpose": "provide postflight diff and liveliness evidence for verification",
+      "signaler": "systemd.path + oneshot bridge",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "artifact_write",
+      "proof_artifact": "$wt/SWEEP/postflight/sweep.diff.json"
+    },
+    {
+      "id": "E8",
+      "from": "VERIFY",
+      "to": "TERMINATE",
+      "transition": "verification_passed",
+      "purpose": "allow closeout when evidence and drift gates pass",
+      "signaler": "systemd.path + oneshot bridge",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "artifact_write",
+      "proof_artifact": "$wt/LOOP/verification.state.json"
+    },
+    {
+      "id": "E9",
+      "from": "VERIFY",
+      "to": "IMPLEMENT",
+      "transition": "verification_failed",
+      "purpose": "route back to implementation when verification fails and redesign is not selected",
+      "signaler": "systemd.path + oneshot bridge",
+      "recipient": "spawn eventing subsystem",
+      "signal_kind": "artifact_write",
+      "proof_artifact": "$wt/LOOP/verification.state.json"
+    }
+  ],
+  "derived_constraints": [
+    "PLAN performs no GitHub operations.",
+    "LOOP remains a dumb packet lifecycle shell.",
+    "spawn accepts normalized signals as legal transition candidates and advances the FSM.",
+    "GitHub is required only at DECISION boundaries, not during PLAN emission.",
+    "Signals are transition requests or observations, not arbitrary file writes.",
+    "systemd.path on $wt is the local raw-signal substrate for artifact-driven events.",
+    "GitHub issue labels are the authoritative coarse operational state carrier."
+  ]
+}

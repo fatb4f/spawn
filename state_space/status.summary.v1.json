@@ -1,0 +1,86 @@
+{
+  "kind": "state_space.status.summary.v1",
+  "generated_at_utc": "2026-03-07T19:15:52Z",
+  "source_refs": [
+    "architecture.decisions.v1.json",
+    "loop.lifecycle.model.v1.json",
+    "loop.phase_transition_dag.v1.json",
+    "loop.fsm.schema.json",
+    "spawn.eventing.model.v1.json",
+    "spawn.event.matrix.v1.json",
+    "proposal_register.v1.json"
+  ],
+  "closed": {
+    "decisions": [
+      {
+        "id": "AD-009",
+        "title": "Dumb LOOP, Spawn-Owned Transition Actuation",
+        "statement": "LOOP remains a dumb packet lifecycle shell; spawn owns signal normalization, transition validation, reconciliation, and actuation between local FSM state and GitHub projection."
+      },
+      {
+        "id": "AD-010",
+        "title": "systemd.path as Local Raw Signal Substrate",
+        "statement": "Local artifact raw signals are detected via systemd .path units scoped to $wt and bridged to spawn through oneshot services."
+      }
+    ],
+    "resolved_topics": [
+      "LOOP remains a dumb packet lifecycle shell.",
+      "spawn is the transition authority for local FSM reconciliation and actuation.",
+      "GitHub issue labels are the authoritative coarse remote state carrier.",
+      "Local artifact raw signals enter through systemd.path on $wt.",
+      "Direct API wrapper + systemd oneshot/transient units are the selected signaling/actuation pattern."
+    ]
+  },
+  "open": {
+    "design_points": [
+      "Define whether plan slice identity lives in one issue per slice or in project item metadata.",
+      "Pin systemd oneshot/transient actuator unit shape and naming.",
+      "Pin label lifecycle semantics (replace vs add/remove rules).",
+      "Define normalized signal.event schema and persistence location."
+    ],
+    "proposal_gaps": {
+      "SS-013": [
+        "plan/gate state schemas not yet defined",
+        "systemd oneshot/transient actuator unit shape/name not pinned",
+        "GitHub issue-label lifecycle semantics not pinned",
+        "normalized signal.event schema and persistence location not yet defined"
+      ],
+      "SS-014": [
+        "normalized signal.event schema not yet defined",
+        "signal persistence location not yet defined",
+        "systemd unit naming/template contract not yet defined"
+      ]
+    }
+  },
+  "status": {
+    "proposal_summary": {
+      "total": 14,
+      "status_counts": {
+        "defined": 3,
+        "partial": 11
+      },
+      "gate_counts": {
+        "PASS": 3,
+        "FAIL": 11
+      },
+      "fail_ids": [
+        "SS-002",
+        "SS-003",
+        "SS-004",
+        "SS-005",
+        "SS-006",
+        "SS-008",
+        "SS-009",
+        "SS-010",
+        "SS-011",
+        "SS-013",
+        "SS-014"
+      ]
+    },
+    "next_contracts": [
+      "signal.event.schema.json",
+      "plan.state.schema.json",
+      "gate.state.schema.json"
+    ]
+  }
+}

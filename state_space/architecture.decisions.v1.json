@@ -1,6 +1,6 @@
 {
   "kind": "state_space.architecture_decisions.v1",
-  "generated_at_utc": "2026-03-07T01:44:25.135133Z",
+  "generated_at_utc": "2026-03-07T19:08:43Z",
   "source": "discussions/state_space/stack_decisions_2026-03-06.md",
   "decisions": [
     {
@@ -173,6 +173,50 @@
       "evidence_refs": [
         "discussions/state_space.docs/output_3.md",
         "discussions/state_space/formal_state_space_spec_v0.json"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-009",
+      "title": "Dumb LOOP, Spawn-Owned Transition Actuation",
+      "statement": "LOOP remains a dumb packet lifecycle shell; spawn owns signal normalization, transition validation, reconciliation, and actuation between local FSM state and GitHub projection.",
+      "rationale": [
+        "Skill-spec compliance is preserved when phase skills and LOOP emit/consume artifacts instead of embedding orchestration logic.",
+        "Runtime eventing and actuation belong in the daemon, not in the skill layer."
+      ],
+      "implications": [
+        "LOOP owns $wt and packet lifecycle artifacts but not transition semantics.",
+        "spawn becomes the authoritative local transition engine."
+      ],
+      "owner": "spawn+loop",
+      "status": "accepted",
+      "scope": "loop lifecycle and transition ownership",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space/loop.lifecycle.model.v1.json",
+        "discussions/state_space/spawn.eventing.model.v1.json"
+      ],
+      "supersedes": []
+    },
+    {
+      "id": "AD-010",
+      "title": "systemd.path as Local Raw Signal Substrate",
+      "statement": "Local artifact raw signals are detected via systemd .path units scoped to $wt and bridged to spawn through oneshot services.",
+      "rationale": [
+        "systemd.path provides event-driven local artifact detection without a resident polling loop.",
+        "Separating raw detection from semantic interpretation keeps path units simple and spawn authoritative."
+      ],
+      "implications": [
+        "Artifact writes under $wt become the local event ingress plane.",
+        "Oneshot bridge units normalize observations and hand them to spawn."
+      ],
+      "owner": "spawn+systemd",
+      "status": "accepted",
+      "scope": "local event ingress",
+      "adoption_phase": "phase_1",
+      "evidence_refs": [
+        "discussions/state_space/loop.phase_transition_dag.v1.json",
+        "discussions/state_space/spawn.eventing.model.v1.json"
       ],
       "supersedes": []
     }

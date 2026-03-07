@@ -1,0 +1,132 @@
+{
+  "kind": "spawn.eventing.model.v1",
+  "generated_at_utc": "2026-03-07T19:10:49Z",
+  "status": "partial",
+  "ownership": {
+    "packet_owner": "loop",
+    "phase_artifact_emitters": [
+      "sweep",
+      "plan",
+      "implement"
+    ],
+    "transition_authority": "spawn",
+    "event_normalizer": "spawn",
+    "actuation_dispatcher": "spawn",
+    "remote_projection": "github issue labels"
+  },
+  "principles": [
+    "LOOP remains a dumb lifecycle shell and packet owner.",
+    "Phase skills emit artifacts only.",
+    "spawn owns signal normalization, transition validation, and actuation dispatch.",
+    "GitHub labels carry coarse remote state; spawn reconciles them into local authoritative FSM state.",
+    "Every non-trivial local side effect runs via systemd oneshot or transient units."
+  ],
+  "source_classes": [
+    {
+      "id": "local_artifact",
+      "raw_signal_substrate": "systemd.path on $wt",
+      "adapter": "path-triggered oneshot service",
+      "purpose": "turn artifact existence/change into a raw local signal for spawn normalization",
+      "candidates": [
+        "$wt/PLAN/plan.json",
+        "$wt/GATE/gate.state.json",
+        "$wt/IMPLEMENT/results.json",
+        "$wt/SWEEP/preflight",
+        "$wt/SWEEP/postflight",
+        "$wt/LOOP/verification.state.json"
+      ]
+    },
+    {
+      "id": "github_issue_label",
+      "raw_signal_substrate": "direct GitHub API wrapper",
+      "adapter": "oneshot or transient poll/wait unit",
+      "purpose": "observe authoritative coarse remote gate state",
+      "candidates": [
+        "state:proposed",
+        "state:approved",
+        "state:rejected",
+        "state:implementing",
+        "state:verified"
+      ]
+    },
+    {
+      "id": "github_workflow",
+      "raw_signal_substrate": "workflow result projected into issue labels or check results",
+      "adapter": "direct API wrapper",
+      "purpose": "publish remote gate outcomes and async validation results",
+      "candidates": [
+        "workflow_pass",
+        "workflow_fail"
+      ]
+    },
+    {
+      "id": "git_hook",
+      "raw_signal_substrate": "local git hooks",
+      "adapter": "hook wrapper -> spawn or ledger writer",
+      "purpose": "emit local commit-side signals without taking planning authority",
+      "candidates": [
+        "commit_recorded"
+      ]
+    },
+    {
+      "id": "systemd_unit",
+      "raw_signal_substrate": "systemd unit result",
+      "adapter": "unit status probe or explicit result artifact",
+      "purpose": "record actuation completion/failure",
+      "candidates": [
+        "actuation_completed",
+        "actuation_failed"
+      ]
+    }
+  ],
+  "event_classes": [
+    "artifact.emitted",
+    "transition.requested",
+    "transition.observed",
+    "transition.applied",
+    "transition.failed",
+    "gate.resolved",
+    "verification.recorded",
+    "timeout.detected"
+  ],
+  "local_raw_signal_model": {
+    "carrier": "systemd.path",
+    "scope": "$wt",
+    "service_shape": "path -> oneshot service -> spawn normalize",
+    "rules": [
+      "path units detect file/dir changes only; they do not interpret phase semantics",
+      "semantic transition meaning is resolved inside spawn",
+      "oneshot bridge units are idempotent and may no-op on duplicate observations"
+    ]
+  },
+  "actuation_chain": [
+    "raw signal observed",
+    "adapter emits normalized signal.event payload candidate",
+    "spawn validates candidate against current FSM state",
+    "spawn dispatches oneshot/transient actuator when a side effect is required",
+    "actuator writes local state artifact and/or remote projection update",
+    "actuator completion is observed as a new event source"
+  ],
+  "failure_rules": [
+    "duplicate event => idempotent no-op",
+    "illegal transition => reject and record transition.failed",
+    "remote timeout => timeout.detected without guessing the next state",
+    "missing artifact proof => do not advance FSM"
+  ],
+  "idempotency": {
+    "key_fields": [
+      "run_id",
+      "event_class",
+      "source_class",
+      "proof_artifact",
+      "remote_indicator"
+    ],
+    "policy": "same idempotency key may be replayed safely; first successful application wins"
+  },
+  "open_design_points": [
+    "Pin oneshot/transient unit naming and templating.",
+    "Define normalized signal.event schema and persistence location.",
+    "Define exact GitHub label replacement semantics."
+  ],
+  "event_matrix_ref": "discussions/state_space/spawn.event.matrix.v1.json"
+}

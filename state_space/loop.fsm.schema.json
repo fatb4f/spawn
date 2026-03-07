@@ -1,0 +1,286 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://_404.local/discussions/state_space/loop.fsm.schema.json",
+  "title": "loop.fsm",
+  "description": "Authoritative local FSM state for one LOOP run, maintained by spawn from the phase transition DAG and consumed by LOOP packet lifecycle logic.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_name",
+    "schema_version",
+    "run_id",
+    "wt_path",
+    "current_phase",
+    "transition_status",
+    "allowed_transitions",
+    "artifacts",
+    "github_projection",
+    "last_signal",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_name": {
+      "const": "loop.fsm"
+    },
+    "schema_version": {
+      "const": "v1"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "wt_path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "current_phase": {
+      "$ref": "#/$defs/phase_state",
+      "description": "Current lifecycle phase after spawn reconciliation."
+    },
+    "transition_status": {
+      "type": "string",
+      "enum": [
+        "idle",
+        "waiting_signal",
+        "ready",
+        "blocked",
+        "terminal"
+      ]
+    },
+    "allowed_transitions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/transition_name"
+      },
+      "uniqueItems": true
+    },
+    "artifacts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "loop",
+        "sweep_preflight",
+        "plan",
+        "gate",
+        "implement",
+        "sweep_postflight",
+        "verify",
+        "terminate"
+      ],
+      "properties": {
+        "loop": {
+          "$ref": "#/$defs/path_ref_array"
+        },
+        "sweep_preflight": {
+          "$ref": "#/$defs/path_ref_array"
+        },
+        "plan": {
+          "$ref": "#/$defs/path_ref_array"
+        },
+        "gate": {
+          "$ref": "#/$defs/path_ref_array"
+        },
+        "implement": {
+          "$ref": "#/$defs/path_ref_array"
+        },
+        "sweep_postflight": {
+          "$ref": "#/$defs/path_ref_array"
+        },
+        "verify": {
+          "$ref": "#/$defs/path_ref_array"
+        },
+        "terminate": {
+          "$ref": "#/$defs/path_ref_array"
+        }
+      }
+    },
+    "github_projection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue_ref",
+        "issue_state",
+        "operational_state"
+      ],
+      "properties": {
+        "issue_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "issue_state": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "open",
+            "closed",
+            null
+          ]
+        },
+        "operational_state": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "state:proposed",
+            "state:approved",
+            "state:rejected",
+            "state:implementing",
+            "state:verified",
+            null
+          ]
+        }
+      }
+    },
+    "last_signal": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/transition_signal"
+        }
+      ],
+      "description": "Last normalized signal accepted or observed by spawn."
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "notes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "phase_state": {
+      "type": "string",
+      "enum": [
+        "INIT",
+        "SWEEP_PREFLIGHT",
+        "PLAN",
+        "DECISION",
+        "IMPLEMENT",
+        "SWEEP_POSTFLIGHT",
+        "VERIFY",
+        "TERMINATE",
+        "ARCHIVED"
+      ]
+    },
+    "transition_name": {
+      "type": "string",
+      "enum": [
+        "init_completed",
+        "sweep_preflight_completed",
+        "plan_emitted",
+        "submit_requested",
+        "approval_observed",
+        "rejection_observed",
+        "implement_completed",
+        "sweep_postflight_completed",
+        "verification_passed",
+        "verification_failed",
+        "terminate_completed"
+      ]
+    },
+    "path_ref_array": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "transition_signal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_name",
+        "schema_version",
+        "run_id",
+        "transition",
+        "from_phase",
+        "to_phase",
+        "purpose",
+        "signaler",
+        "recipient",
+        "signal_kind",
+        "proof_artifact",
+        "observed_at",
+        "idempotency_key"
+      ],
+      "properties": {
+        "schema_name": {
+          "const": "loop.signal"
+        },
+        "schema_version": {
+          "const": "v1"
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transition": {
+          "$ref": "#/$defs/transition_name"
+        },
+        "from_phase": {
+          "$ref": "#/$defs/phase_state"
+        },
+        "to_phase": {
+          "$ref": "#/$defs/phase_state"
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signaler": {
+          "type": "string",
+          "minLength": 1
+        },
+        "recipient": {
+          "type": "string",
+          "minLength": 1
+        },
+        "signal_kind": {
+          "type": "string",
+          "enum": [
+            "artifact_write",
+            "github_state",
+            "git_hook",
+            "workflow_result",
+            "manual"
+          ]
+        },
+        "proof_artifact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "remote_indicator": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "idempotency_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "payload_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    }
+  }
+}

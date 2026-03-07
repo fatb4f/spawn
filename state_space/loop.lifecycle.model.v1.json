@@ -1,0 +1,347 @@
+{
+  "kind": "loop.lifecycle.model.v1",
+  "generated_at_utc": "2026-03-07T19:08:43Z",
+  "status": "partial",
+  "touching": {
+    "meta_skill_lifecycle": "loop owns the run packet, transition log, and legal transition enforcement for one active worktree cache",
+    "effective_skill_set": [
+      "sweep",
+      "plan",
+      "implement"
+    ],
+    "state_machine": "spawn-maintained local finite-state machine over skill artifacts and external signals",
+    "git_github_projection": "git provides local audit and hook ingress; GitHub provides durable deliverable identity and coarse orchestration state",
+    "signaling_model": "spawn-owned event-driven bridge from .path/raw signals, git hooks, and GitHub state into local reconciliation and actuation"
+  },
+  "principles": [
+    "PLAN is a pure artifact emitter and performs no GitHub operations.",
+    "LOOP remains a dumb packet lifecycle shell and does not own transition semantics.",
+    "spawn owns signal normalization, transition validation, reconciliation, and actuation.",
+    "GitHub is the durable transition anchor for deliverable status, approvals, and reviewer/operator visibility.",
+    "The worktree cache ($wt) is the ephemeral execution packet for one active run.",
+    "Git hooks and workflow automation are signal ingress points, not planning authorities."
+  ],
+  "artifacts": {
+    "worktree_root": "$wt",
+    "loop": [
+      "$wt/LOOP/loop.state.json",
+      "$wt/LOOP/transition.events.jsonl",
+      "$wt/LOOP/github.binding.json"
+    ],
+    "sweep": [
+      "$wt/SWEEP/preflight/*",
+      "$wt/SWEEP/postflight/*"
+    ],
+    "plan": [
+      "$wt/PLAN/plan.json",
+      "$wt/PLAN/plan.state.json"
+    ],
+    "gate": [
+      "$wt/GATE/gate.state.json",
+      "$wt/GATE/approval.event.json"
+    ],
+    "implement": [
+      "$wt/IMPLEMENT/IMPLEMENT.md",
+      "$wt/IMPLEMENT/packet.meta.json",
+      "$wt/IMPLEMENT/results.json"
+    ]
+  },
+  "effective_skill_set": [
+    {
+      "skill": "sweep",
+      "role": "preflight/postflight observation and evidence capture",
+      "reads": [
+        "loop phase context",
+        "authoritative state snapshot refs"
+      ],
+      "writes": [
+        "sweep artifacts",
+        "observation events"
+      ],
+      "state_correlations": [
+        "preflight_ready",
+        "postflight_ready"
+      ],
+      "transition_events": [
+        "sweep_preflight_recorded",
+        "sweep_postflight_recorded"
+      ]
+    },
+    {
+      "skill": "plan",
+      "role": "emit the plan packet and slice definitions only",
+      "reads": [
+        "objective",
+        "problem_set",
+        "sweep artifacts"
+      ],
+      "writes": [
+        "plan.json",
+        "plan packet"
+      ],
+      "state_correlations": [
+        "draft"
+      ],
+      "transition_events": [
+        "plan_emitted"
+      ]
+    },
+    {
+      "skill": "implement",
+      "role": "consume an approved plan and emit execution/evidence artifacts",
+      "reads": [
+        "approved plan",
+        "gate state",
+        "github binding"
+      ],
+      "writes": [
+        "implement packet",
+        "verification results",
+        "execution evidence"
+      ],
+      "state_correlations": [
+        "implement_ready",
+        "implementing",
+        "verified"
+      ],
+      "transition_events": [
+        "implement_started",
+        "implement_completed",
+        "verification_recorded"
+      ]
+    },
+    {
+      "skill": "loop",
+      "role": "own the run packet and consume reconciled transition state for lifecycle routing",
+      "reads": [
+        "local artifacts",
+        "spawn-maintained loop.fsm state",
+        "reconciled gate/verification state"
+      ],
+      "writes": [
+        "loop packet artifacts",
+        "closeout artifacts"
+      ],
+      "state_correlations": [
+        "packet_initialized",
+        "packet_closed"
+      ],
+      "transition_events": [
+        "submit_requested",
+        "archive_completed"
+      ]
+    }
+  ],
+  "state_machine": {
+    "authority": "spawn",
+    "local_states": [
+      "draft",
+      "submitted",
+      "approved",
+      "rejected",
+      "implement_ready",
+      "implementing",
+      "verified",
+      "archived"
+    ],
+    "transitions": [
+      {
+        "from": "draft",
+        "event": "plan_emitted",
+        "to": "draft",
+        "writer": "plan",
+        "signal": "local artifact write",
+        "local_artifacts": [
+          "$wt/PLAN/plan.json"
+        ],
+        "remote_projection": null,
+        "next_consumer": "loop"
+      },
+      {
+        "from": "draft",
+        "event": "submit_requested",
+        "to": "submitted",
+        "writer": "spawn submit actuator",
+        "signal": "local submit intent reconciled through spawn",
+        "local_artifacts": [
+          "$wt/PLAN/plan.state.json",
+          "$wt/LOOP/github.binding.json"
+        ],
+        "remote_projection": {
+          "issue": "open",
+          "state_label": "state:proposed"
+        },
+        "next_consumer": "github projection"
+      },
+      {
+        "from": "submitted",
+        "event": "approval_observed",
+        "to": "approved",
+        "writer": "spawn reconciler",
+        "signal": "GitHub state transition observed",
+        "local_artifacts": [
+          "$wt/GATE/gate.state.json",
+          "$wt/PLAN/plan.state.json"
+        ],
+        "remote_projection": {
+          "issue": "open",
+          "state_label": "state:approved"
+        },
+        "next_consumer": "loop and implement"
+      },
+      {
+        "from": "submitted",
+        "event": "rejection_observed",
+        "to": "rejected",
+        "writer": "spawn reconciler",
+        "signal": "GitHub state transition observed",
+        "local_artifacts": [
+          "$wt/GATE/gate.state.json",
+          "$wt/PLAN/plan.state.json"
+        ],
+        "remote_projection": {
+          "issue": "open",
+          "state_label": "state:rejected"
+        },
+        "next_consumer": "loop and implement"
+      },
+      {
+        "from": "approved",
+        "event": "implement_started",
+        "to": "implement_ready",
+        "writer": "spawn",
+        "signal": "spawn confirms approved gate and unlocks implement",
+        "local_artifacts": [
+          "$wt/LOOP/transition.events.jsonl"
+        ],
+        "remote_projection": {
+          "issue": "open",
+          "state_label": "state:approved"
+        },
+        "next_consumer": "implement"
+      },
+      {
+        "from": "implement_ready",
+        "event": "execution_started",
+        "to": "implementing",
+        "writer": "implement",
+        "signal": "implement packet generation/execution start",
+        "local_artifacts": [
+          "$wt/IMPLEMENT/packet.meta.json"
+        ],
+        "remote_projection": {
+          "issue": "open",
+          "state_label": "state:implementing"
+        },
+        "next_consumer": "spawn"
+      },
+      {
+        "from": "implementing",
+        "event": "verification_recorded",
+        "to": "verified",
+        "writer": "implement",
+        "signal": "verification evidence emitted",
+        "local_artifacts": [
+          "$wt/IMPLEMENT/results.json"
+        ],
+        "remote_projection": {
+          "issue": "open",
+          "state_label": "state:verified"
+        },
+        "next_consumer": "spawn"
+      },
+      {
+        "from": "verified",
+        "event": "archive_completed",
+        "to": "archived",
+        "writer": "loop",
+        "signal": "closeout complete",
+        "local_artifacts": [
+          "$wt/LOOP/loop.state.json"
+        ],
+        "remote_projection": {
+          "issue": "closed",
+          "state_label": "state:verified"
+        },
+        "next_consumer": "none"
+      }
+    ]
+  },
+  "git_github_projection": {
+    "git": {
+      "role": "local audit trail and hook ingress",
+      "signals": [
+        "post-commit hook",
+        "worktree status",
+        "branch/worktree lifecycle"
+      ]
+    },
+    "github": {
+      "role": "durable deliverable identity and coarse orchestration state",
+      "issue_lifecycle": [
+        "open",
+        "closed"
+      ],
+      "operational_state_projection": [
+        "state:proposed",
+        "state:approved",
+        "state:rejected",
+        "state:implementing",
+        "state:verified"
+      ],
+      "recommended_storage": "GitHub issue labels are authoritative for coarse operational state; Projects are optional read-model/dashboard only",
+      "pinned_state_carrier": {
+        "authority": "issue_labels",
+        "reason": [
+          "Stable REST API surface for label mutation and issue events",
+          "Compatible with current gh auth/token scopes in the active environment",
+          "Lower identifier and permission complexity than Projects v2 fields"
+        ],
+        "labels": [
+          "state:proposed",
+          "state:approved",
+          "state:rejected",
+          "state:implementing",
+          "state:verified"
+        ],
+        "projects_v2_role": "optional projection only"
+      }
+    }
+  },
+  "signaling_and_orchestration": {
+    "event_sources": [
+      "artifact write in $wt",
+      "git post-commit hook",
+      "GitHub issue/project state transition",
+      "workflow completion artifact"
+    ],
+    "bridges": [
+      "systemd.path units on $wt detect local artifact raw signals and trigger oneshot bridge services",
+      "direct API wrapper normalizes GitHub issue-label and workflow facts into signal payloads",
+      "spawn validates signals, dispatches actuation, and writes reconciled local state artifacts"
+    ],
+    "rules": [
+      "Only spawn may advance the local FSM.",
+      "LOOP consumes reconciled state but does not author transition semantics.",
+      "Only reconciled approval may unlock IMPLEMENT.",
+      "Hooks emit ingress signals but do not mutate plan semantics.",
+      "GitHub records coarse transition state; local artifacts record phase-local detail.",
+      "Local artifact raw signals enter through systemd.path on $wt."
+    ],
+    "actuation": {
+      "signal_acquisition": [
+        "systemd.path + oneshot bridge",
+        "direct API wrapper"
+      ],
+      "signal_actuation": "spawn-dispatched systemd oneshot/transient units",
+      "transition_authority": "spawn",
+      "packet_consumer": "loop"
+    }
+  },
+  "open_design_points": [
+    "Define whether plan slice identity lives in one issue per slice or in project item metadata.",
+    "Pin systemd oneshot/transient actuator unit shape and naming.",
+    "Pin label lifecycle semantics (replace vs add/remove rules).",
+    "Define normalized signal.event schema and persistence location."
+  ]
+}
