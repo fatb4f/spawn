@@ -53,16 +53,16 @@ class SessionContextPaths:
     loader_report_dir: Path
 
     def current_context_ref(self) -> str:
-        return "CODEX_STATE/session_context/current/session_context.v1.json"
+        return str(self.current_context)
 
     def latest_pointer_ref(self) -> str:
-        return "CODEX_STATE/session_context/latest.json"
+        return str(self.latest_pointer)
 
     def diff_ref(self, path: Path) -> str:
-        return f"CODEX_STATE/session_context/diffs/{path.name}"
+        return str(path)
 
     def sync_event_ref(self, path: Path) -> str:
-        return f"CODEX_STATE/session_context/sync_events/{path.name}"
+        return str(path)
 
 
 @dataclass(frozen=True)

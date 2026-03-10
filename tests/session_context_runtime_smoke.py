@@ -128,10 +128,9 @@ def main() -> int:
             )
             assert "T030" in current_payload["backlog_item_refs"]
             assert "SCX-005" in current_payload["open_gate_refs"]
-            assert (
-                latest_payload["context_ref"]
-                == "CODEX_STATE/session_context/current/session_context.v1.json"
-            )
+            assert latest_payload["context_ref"] == str(current_path)
+            assert first.current_ref == str(current_path)
+            assert first.latest_ref == str(latest_path)
             assert first_sync["trigger"] == "path"
             assert first_sync["action"] == "write"
             assert first_sync["status"] == "success"
@@ -209,8 +208,8 @@ def main() -> int:
             assert load_result.report_ref == str(report_path)
             assert loader_report["target_session_id"] == "session-002"
             assert loader_report["output_context_hash"] == current_payload["context_hash"]
-            assert loader_report["source_context_ref"].endswith(
-                f"#context_hash={current_payload['context_hash']}"
+            assert loader_report["source_context_ref"] == (
+                f"{current_path}#context_hash={current_payload['context_hash']}"
             )
 
             third = runtime.reconcile_session_context(
