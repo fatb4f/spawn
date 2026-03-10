@@ -43,13 +43,17 @@ def main() -> int:
         with tempfile.TemporaryDirectory(prefix="spawn-session-context-") as td:
             tmp = Path(td)
             state_root = tmp / "state"
+            meta_root = state_root / "meta"
             sessions_root = tmp / "sessions" / "2026" / "03" / "10"
             prjroot = tmp / "repos"
             repo = prjroot / "demo"
             session_file = sessions_root / "sample.jsonl"
+            prompt_snippet = meta_root / "generated_prompt_context.txt"
+            loader_input = meta_root / "session_context_loader_input.json"
 
             repo.mkdir(parents=True, exist_ok=True)
             sessions_root.mkdir(parents=True, exist_ok=True)
+            meta_root.mkdir(parents=True, exist_ok=True)
 
             run(["git", "init", "-b", "main"], cwd=repo)
             run(["git", "config", "user.email", "test@example.com"], cwd=repo)
@@ -133,6 +137,27 @@ def main() -> int:
             assert first_sync["status"] == "success"
             assert list(diff_dir.glob("*.json")) == []
 
+            run(
+                [
+                    "python",
+                    "tools/codex/generate_context.py",
+                    "--prjroot",
+                    str(prjroot),
+                    "--sessions-root",
+                    str(tmp / "sessions"),
+                    "--output",
+                    str(prompt_snippet),
+                    "--loader-input-output",
+                    str(loader_input),
+                ],
+                cwd=ROOT,
+            )
+            prompt_text = prompt_snippet.read_text(encoding="utf-8")
+            loader_input_payload = load_json(loader_input)
+            assert "session_context_carryover:" in prompt_text
+            assert "SCX-005" in prompt_text
+            assert loader_input_payload["source_context_hash"] == current_payload["context_hash"]
+
             append_jsonl(
                 session_file,
                 [
@@ -172,6 +197,19 @@ def main() -> int:
             assert second_sync["action"] == "reconcile"
             assert second_sync["status"] == "success"
             assert second_sync["diff_ref"] is not None
+
+            load_result = runtime.load_fresh_session_context(
+                target_session_id="session-002",
+                input_path=loader_input,
+            )
+            report_dir = state_root / "session_context" / "loader_reports"
+            loader_report = load_json(sorted(report_dir.glob("*.json"))[-1])
+            assert load_result.status == "success"
+            assert loader_report["target_session_id"] == "session-002"
+            assert loader_report["output_context_hash"] == current_payload["context_hash"]
+            assert loader_report["source_context_ref"].endswith(
+                f"#context_hash={current_payload['context_hash']}"
+            )
 
             third = runtime.reconcile_session_context(
                 request_id="req-3",

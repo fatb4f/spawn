@@ -23,6 +23,13 @@ from spawn.contracts.envelopes import utc_now
 SUPPORTED_TRIGGERS = {"manual", "path", "timer"}
 TRIGGER_PREFIX = "trigger:"
 ZERO_HASH = "0" * 64
+SUMMARY_SECTION_KEYS = [
+    "active_objectives",
+    "proposal_refs",
+    "backlog_item_refs",
+    "open_gate_refs",
+    "next_steps",
+]
 
 PROPOSAL_REF_RE = re.compile(r"proposal_register/[A-Za-z0-9._/\-]+(?:\.json)?")
 BACKLOG_REF_RE = re.compile(r"\bT\d+\b")
@@ -32,6 +39,7 @@ SCHEMA_FILES = {
     "session_context": "contracts/session_context/session_context.v1.schema.json",
     "session_context_diff": "contracts/session_context/session_context.diff.v1.schema.json",
     "session_context_sync_event": "contracts/session_context/session_context.sync_event.v1.schema.json",
+    "fresh_session_loader_report": "contracts/session_context/fresh_session_loader_report.v1.schema.json",
 }
 
 
@@ -82,6 +90,26 @@ class SessionContextSyncResult:
         return " ".join(parts)
 
 
+@dataclass(frozen=True)
+class FreshSessionLoadResult:
+    report_ref: str
+    target_session_id: str
+    status: str
+    source_context_ref: str
+    output_context_hash: str | None
+
+    def summary_line(self) -> str:
+        parts = [
+            f"loader_report={self.report_ref}",
+            f"target_session_id={self.target_session_id}",
+            f"status={self.status}",
+            f"source_context_ref={self.source_context_ref}",
+        ]
+        if self.output_context_hash:
+            parts.append(f"output_context_hash={self.output_context_hash}")
+        return " ".join(parts)
+
+
 def codex_state_root() -> Path:
     return Path(
         os.environ.get(
@@ -115,6 +143,10 @@ def session_context_paths() -> SessionContextPaths:
         sync_event_dir=root / "sync_events",
         loader_report_dir=root / "loader_reports",
     )
+
+
+def loader_input_path() -> Path:
+    return codex_state_root() / "meta" / "session_context_loader_input.json"
 
 
 def encode_event_id(trigger: str, event_id: str | None) -> str:
@@ -343,6 +375,14 @@ def _read_json(path: Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def load_current_session_context() -> dict[str, Any] | None:
+    payload = _read_json(session_context_paths().current_context)
+    if payload is None:
+        return None
+    _validate_payload("session_context", payload)
+    return payload
+
+
 def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     fd, tmp_name = tempfile.mkstemp(
@@ -364,6 +404,13 @@ def _atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
             os.unlink(tmp_name)
 
 
+def _current_context_source_ref(paths: SessionContextPaths, context_hash: str | None) -> str:
+    ref = paths.current_context_ref()
+    if context_hash:
+        return f"{ref}#context_hash={context_hash}"
+    return ref
+
+
 def _latest_pointer_payload(paths: SessionContextPaths, context_hash: str) -> dict[str, Any]:
     return {
         "kind": "session_context.latest_pointer.v1",
@@ -371,6 +418,202 @@ def _latest_pointer_payload(paths: SessionContextPaths, context_hash: str) -> di
         "context_ref": paths.current_context_ref(),
         "context_hash": context_hash,
     }
+
+
+def build_loader_input() -> dict[str, Any]:
+    paths = session_context_paths()
+    current = load_current_session_context()
+    if current is None:
+        return {
+            "kind": "session_context.loader_input.internal.v1",
+            "generated_at": utc_now(),
+            "status": "unavailable",
+            "source_context_ref": paths.current_context_ref(),
+            "source_context_hash": None,
+            "consumed_sections": [],
+            "skipped_sections": list(SUMMARY_SECTION_KEYS),
+            "evidence_refs": [paths.current_context_ref()],
+        }
+
+    consumed_sections = [
+        section for section in SUMMARY_SECTION_KEYS if current.get(section)
+    ]
+    skipped_sections = [
+        section for section in SUMMARY_SECTION_KEYS if section not in consumed_sections
+    ]
+    context_hash = str(current.get("context_hash", "")) or None
+    evidence_refs = [paths.current_context_ref(), paths.latest_pointer_ref()]
+    return {
+        "kind": "session_context.loader_input.internal.v1",
+        "generated_at": utc_now(),
+        "status": "available",
+        "source_context_ref": _current_context_source_ref(paths, context_hash),
+        "source_context_hash": context_hash,
+        "consumed_sections": consumed_sections,
+        "skipped_sections": skipped_sections,
+        "evidence_refs": evidence_refs,
+        "context": current,
+    }
+
+
+def write_loader_input(path: Path) -> dict[str, Any]:
+    payload = build_loader_input()
+    _atomic_write_json(path, payload)
+    return payload
+
+
+def load_loader_input(path: Path | None = None) -> dict[str, Any] | None:
+    target = path or loader_input_path()
+    payload = _read_json(target)
+    return payload
+
+
+def render_loader_input_summary(loader_input: dict[str, Any] | None) -> str:
+    if not loader_input:
+        return "session_context_carryover:\n- status: unavailable\n- reason: loader input missing\n"
+
+    status = str(loader_input.get("status", "unavailable"))
+    lines = ["session_context_carryover:"]
+    lines.append(f"- status: {status}")
+    if status != "available":
+        lines.append(f"- source_context_ref: {loader_input.get('source_context_ref')}")
+        return "\n".join(lines) + "\n"
+
+    context = loader_input.get("context")
+    if not isinstance(context, dict):
+        lines.append("- reason: context payload missing")
+        return "\n".join(lines) + "\n"
+
+    lines.append(f"- context_id: {context.get('context_id')}")
+    lines.append(f"- generated_at: {context.get('generated_at')}")
+    consumed = loader_input.get("consumed_sections", [])
+    lines.append(f"- consumed_sections: {', '.join(consumed) if consumed else 'none'}")
+
+    objectives = context.get("active_objectives", [])
+    if isinstance(objectives, list):
+        for item in objectives[:3]:
+            lines.append(f"- objective: {_truncate(_normalize_text(str(item)), 160)}")
+
+    next_steps = context.get("next_steps", [])
+    if isinstance(next_steps, list):
+        for item in next_steps[:3]:
+            lines.append(f"- next_step: {_truncate(_normalize_text(str(item)), 160)}")
+
+    gate_refs = context.get("open_gate_refs", [])
+    if isinstance(gate_refs, list) and gate_refs:
+        lines.append(f"- open_gates: {', '.join(str(item) for item in gate_refs[:6])}")
+
+    proposal_refs = context.get("proposal_refs", [])
+    if isinstance(proposal_refs, list) and proposal_refs:
+        lines.append(
+            f"- proposal_refs: {', '.join(str(item) for item in proposal_refs[:4])}"
+        )
+
+    backlog_refs = context.get("backlog_item_refs", [])
+    if isinstance(backlog_refs, list) and backlog_refs:
+        lines.append(
+            f"- backlog_item_refs: {', '.join(str(item) for item in backlog_refs[:6])}"
+        )
+
+    repo_states = context.get("repo_states", [])
+    if isinstance(repo_states, list):
+        for repo in repo_states[:4]:
+            if not isinstance(repo, dict):
+                continue
+            repo_id = repo.get("repo_id")
+            branch = repo.get("branch")
+            commit_ref = repo.get("commit_ref")
+            dirty = "dirty" if repo.get("dirty") else "clean"
+            lines.append(
+                f"- repo_state: {repo_id} branch={branch} commit={commit_ref} {dirty}"
+            )
+
+    return "\n".join(lines) + "\n"
+
+
+def _resolve_target_session_id(target_session_id: str | None) -> str:
+    if target_session_id:
+        normalized = target_session_id.strip()
+        if normalized:
+            return normalized
+    session_file = latest_session_file(sessions_root())
+    session_id, _, _ = _load_session_snapshot(session_file)
+    normalized = session_id.strip()
+    if normalized:
+        return normalized
+    return "session-unresolved"
+
+
+def load_fresh_session_context(
+    *,
+    target_session_id: str | None = None,
+    input_path: Path | None = None,
+) -> FreshSessionLoadResult:
+    paths = session_context_paths()
+    loader_input = load_loader_input(input_path)
+    if loader_input is None:
+        loader_input = build_loader_input()
+
+    status = "failed"
+    output_context_hash: str | None = None
+    consumed_sections: list[str] = []
+    skipped_sections: list[str] = list(SUMMARY_SECTION_KEYS)
+    source_context_ref = paths.current_context_ref()
+    evidence_refs = [paths.current_context_ref()]
+
+    if loader_input.get("status") == "available":
+        source_context_ref = str(loader_input.get("source_context_ref", source_context_ref))
+        source_context_hash = loader_input.get("source_context_hash")
+        output_context_hash = (
+            str(source_context_hash) if isinstance(source_context_hash, str) else None
+        )
+        consumed_sections = [
+            str(item) for item in loader_input.get("consumed_sections", []) if str(item)
+        ]
+        skipped_sections = [
+            str(item) for item in loader_input.get("skipped_sections", []) if str(item)
+        ]
+        evidence_refs = [
+            str(item) for item in loader_input.get("evidence_refs", []) if str(item)
+        ] or evidence_refs
+        status = "success"
+    else:
+        source_context_ref = str(loader_input.get("source_context_ref", source_context_ref))
+        evidence_refs = [
+            str(item) for item in loader_input.get("evidence_refs", []) if str(item)
+        ] or evidence_refs
+
+    report = {
+        "schema_version": "v1",
+        "kind": "fresh_session_loader_report.v1",
+        "report_id": f"loader-{uuid.uuid4().hex[:12]}",
+        "target_session_id": _resolve_target_session_id(target_session_id),
+        "source_context_ref": source_context_ref,
+        "loaded_at": utc_now(),
+        "status": status,
+        "consumed_sections": consumed_sections,
+        "skipped_sections": skipped_sections,
+        "output_context_hash": output_context_hash,
+        "evidence_refs": evidence_refs,
+    }
+    _validate_payload("fresh_session_loader_report", report)
+
+    report_path = (
+        paths.loader_report_dir
+        / f"{utc_now().replace(':', '').replace('-', '')}-{report['report_id']}.json"
+    )
+    _atomic_write_json(report_path, report)
+    return FreshSessionLoadResult(
+        report_ref=f"CODEX_STATE/session_context/loader_reports/{report_path.name}",
+        target_session_id=str(report["target_session_id"]),
+        status=str(report["status"]),
+        source_context_ref=str(report["source_context_ref"]),
+        output_context_hash=(
+            str(report["output_context_hash"])
+            if isinstance(report["output_context_hash"], str)
+            else None
+        ),
+    )
 
 
 def _diff_entries(old: Any, new: Any, path: str = "") -> list[dict[str, Any]]:

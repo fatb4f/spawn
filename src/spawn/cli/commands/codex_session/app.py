@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 from typing import Any, cast
 
 import typer
 
 from spawn.cli.shared import channel_and_stub, console
 from spawn.runtime import codex_session_ops
+from spawn.runtime import session_context_runtime
 from spawn.v1 import spawn_control_pb2 as _pb2
 
 pb2: Any = cast(Any, _pb2)
@@ -158,3 +160,19 @@ def list_runs(
     except json.JSONDecodeError:
         rows = []
     console.print_json(json.dumps(rows, sort_keys=True))
+
+
+@app.command("load-fresh-session")
+def load_fresh_session(
+    target_session_id: str = typer.Option("", "--target-session-id"),
+    loader_input: str = typer.Option("", "--loader-input"),
+) -> None:
+    try:
+        result = session_context_runtime.load_fresh_session_context(
+            target_session_id=target_session_id or None,
+            input_path=Path(loader_input).expanduser() if loader_input else None,
+        )
+    except Exception as exc:
+        console.print(f"fresh-session load failed: {exc}", style="red")
+        raise typer.Exit(1) from exc
+    console.print(result.report_ref)

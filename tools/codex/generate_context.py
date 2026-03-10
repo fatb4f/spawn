@@ -8,9 +8,15 @@ import datetime as dt
 import json
 import os
 import subprocess
+import sys
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
+
+from spawn.runtime import session_context_runtime  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -190,6 +196,7 @@ def format_output(
     sessions_root: Path,
     session_file: Path | None,
     lookback_hours: int,
+    session_context_summary: str,
 ) -> str:
     now = dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     lines: list[str] = []
@@ -207,6 +214,8 @@ def format_output(
         lines.append(f"latest_session_file: {session_file}")
     else:
         lines.append("latest_session_file: unavailable")
+    lines.append("")
+    lines.extend(session_context_summary.rstrip().splitlines())
     lines.append("")
     lines.append("recent_repo_activity:")
     if not repos:
@@ -251,6 +260,10 @@ def parse_args() -> argparse.Namespace:
             "CODEX_CONTEXT_SNIPPET",
             os.path.expanduser("~/.local/state/codex/meta/generated_prompt_context.txt"),
         ),
+    )
+    parser.add_argument(
+        "--loader-input-output",
+        default=os.environ.get("CODEX_SESSION_CONTEXT_LOADER_INPUT", ""),
     )
     parser.add_argument("--max-repos", type=int, default=8)
     parser.add_argument("--max-commits", type=int, default=5)
@@ -304,12 +317,22 @@ def main() -> int:
         min_mtime_epoch=since_epoch,
         max_cwd_probes=max(1, int(args.max_session_cwd_probes)),
     )
+    loader_input_payload = (
+        session_context_runtime.write_loader_input(
+            Path(args.loader_input_output).expanduser().resolve()
+        )
+        if args.loader_input_output
+        else session_context_runtime.build_loader_input()
+    )
     content = format_output(
         repos=repos,
         prjroot=prjroot,
         sessions_root=sessions_root,
         session_file=session_file,
         lookback_hours=lookback_hours,
+        session_context_summary=session_context_runtime.render_loader_input_summary(
+            loader_input_payload
+        ),
     )
     write_atomic(output, content)
     print(output)
