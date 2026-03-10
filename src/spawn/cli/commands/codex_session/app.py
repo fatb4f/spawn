@@ -37,6 +37,7 @@ def refresh(
     socket_path_value: str = typer.Option("", "--socket-path", help="Unix socket path"),
     request_id: str = typer.Option("", "--request-id"),
     event_id: str = typer.Option("", "--event-id"),
+    trigger: str = typer.Option("manual", "--trigger"),
     refresh_command: str = typer.Option(
         "codex-refresh-context --wait-session-write",
         "--refresh-command",
@@ -47,10 +48,14 @@ def refresh(
     try:
         channel, stub = channel_and_stub(socket_path_value)
         try:
+            encoded_event_id = codex_session_ops.encode_refresh_event_id(
+                trigger=trigger,
+                event_id=event_id or None,
+            )
             resp = stub.CodexSessionRefresh(
                 pb2.CodexSessionRefreshRequest(
                     request_id=request_id,
-                    event_id=event_id,
+                    event_id=encoded_event_id,
                     refresh_command=refresh_command,
                     log_path=log_path,
                     wait=wait,

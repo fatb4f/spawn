@@ -139,7 +139,7 @@ def main() -> int:
         item.strip()
         for item in os.environ.get(
             "WATCH_SERVICES",
-            "spawnd-codex-session-refresh.service",
+            "spawnd-codex-session-refresh.service,spawnd-codex-session-refresh-timer.service",
         ).split(",")
         if item.strip()
     ]

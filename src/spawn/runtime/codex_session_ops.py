@@ -12,6 +12,7 @@ from pathlib import Path
 from spawn.contracts.task_results import make_task_result
 from spawn.contracts.envelopes import utc_now
 from spawn.core import service as spawnd
+from spawn.runtime import session_context_runtime
 from spawn.ssot.validate import validate_or_raise
 
 logger = logging.getLogger(__name__)
@@ -87,6 +88,19 @@ def run_transient_worker(
 
     started = utc_now()
     rc, out, err = spawnd.run_command(refresh_command)
+    sync_error = ""
+    try:
+        sync_result = session_context_runtime.reconcile_session_context(
+            request_id=request_id,
+            event_id=event_id,
+        )
+        summary = sync_result.summary_line()
+        out = "\n".join(part for part in [out, summary] if part)
+    except Exception as exc:
+        sync_error = f"session_context reconciliation failed: {exc}"
+        err = "\n".join(part for part in [err, sync_error] if part)
+        if rc == 0:
+            rc = 1
     finished = utc_now()
     append_log(
         path,
@@ -99,10 +113,20 @@ def run_transient_worker(
             finished_at=finished,
             stdout=out,
             stderr=err,
-            reason_code="DETERMINISTIC.OK" if rc == 0 else "TRANSIENT.CMD_FAILED",
+            reason_code="DETERMINISTIC.OK"
+            if rc == 0
+            else (
+                "DETERMINISTIC.SCHEMA_INVALID"
+                if sync_error and "validation failed" in sync_error
+                else "TRANSIENT.CMD_FAILED"
+            ),
         ),
     )
     return rc
+
+
+def encode_refresh_event_id(trigger: str, event_id: str | None) -> str:
+    return session_context_runtime.encode_event_id(trigger, event_id)
 
 
 def dispatch_refresh(
