@@ -203,8 +203,10 @@ def main() -> int:
                 input_path=loader_input,
             )
             report_dir = state_root / "session_context" / "loader_reports"
-            loader_report = load_json(sorted(report_dir.glob("*.json"))[-1])
+            report_path = sorted(report_dir.glob("*.json"))[-1]
+            loader_report = load_json(report_path)
             assert load_result.status == "success"
+            assert load_result.report_ref == str(report_path)
             assert loader_report["target_session_id"] == "session-002"
             assert loader_report["output_context_hash"] == current_payload["context_hash"]
             assert loader_report["source_context_ref"].endswith(

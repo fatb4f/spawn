@@ -604,7 +604,7 @@ def load_fresh_session_context(
     )
     _atomic_write_json(report_path, report)
     return FreshSessionLoadResult(
-        report_ref=f"CODEX_STATE/session_context/loader_reports/{report_path.name}",
+        report_ref=str(report_path),
         target_session_id=str(report["target_session_id"]),
         status=str(report["status"]),
         source_context_ref=str(report["source_context_ref"]),
